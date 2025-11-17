@@ -1,5 +1,7 @@
 # SuperML
 
+![banner](resources/ghpreview.png)
+
 An interpreter and text editor for a subset of the [Caml Programming Language](https://en.wikipedia.org/wiki/Caml).
 
 ## Progress
