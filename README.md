@@ -1,47 +1,15 @@
-# 3DSBuildTemplate
+# SuperML
 
-A starter template for various 3DS homebrew applications. 
+An interpreter and text editor for a subset of the [Caml Programming Language](https://en.wikipedia.org/wiki/Caml).
 
-## Usage
+## Progress
 
-| Make Commands    | Action                                                                                    |
-| -----------------| ----------------------------------------------------------------------------------------- |
-| make             | 
-| make 3ds         | The 3ds target will build a `<project name>.3ds` file.
-| make 3dsx        | The 3dsx target will build both a `<project name>.3dsx` and a `<project name>.smdh` files.
-| make cia         | The cia target will build a `<project name>.cia` file.
-| make citra       | The citra target will build a `<project name>.elf` file and automatically run citra.<sup>1</sup>
-| make elf         | The elf target will build a `<project name>.elf` file.
-| make fbi         | The fbi target will build a `<project name>.cia` file and send it to your 3ds via [FBI].
-| make hblauncher  | The hblauncher target will build a `<project name>.3dsx` file and send your 3ds via homebrew launcher.<sup>2</sup>
-| make release     | The release target will build `.elf`, `.3dsx`, `.cia`, `.3ds` files and a zip file (.3dsx and .smdh only).<sup>3</sup>
+So far this is a very rudimentary text editor and a disconnected interpreter interface.
+Todos:
 
-**Notes:** 
-* <sup>1</sup> `make citra` requires having citra installed and in your `$PATH`)
-* <sup>2</sup> If you intend to use the hblauncher and fbi targets ensure you have set IP3DS in the `Makefile` to the ip address of your 3ds on your network.
-    * In homebrew launcher press Y and you can netload your 3dsx file.
-    * In [FBI] go to remote install and select `Receive URLs over the network`.
-* <sup>3</sup> This requires having [makerom] and [bannertool] both included in `buildtools` as 7z files.
-* If your on windows you will need both of the following in your `$PATH` (included aswell)
-    * [zip] 
-    * [libbz2.dll]
-
-## IDE Setup
-
-### IntelliJ's CLion
-1. Open project folder in Clion.
-2. Adjust `CMakeLists.txt` include_directories to point to devkitArm.
-
-**Note:** Make sure [mingw-w64] toolchain is setup in settings. 
-
-### Code::Blocks
-1. Simply open the 3ds.cbp in Code::Blocks
-2. Choose File > Save as user-template and enter a template name.  The project setup is now a user template to create new projects.
-3. When creating a new project select File > New > From template and follow the wizard's instructions.
-4. Ensure you have the environment variables plugin installed (in linux you can install this by installing the codeblocks-contrib package)
-5. Choose Settings > Environment and scroll down to the Environment Variables section.
-6. Add DEVKITPRO to point to where devkitpro is installed
-7. Add DEVKITARM to point to where devkitarm is.
+- Parsing
+- Execution
+- Load source files from ROMFS/SD card
 
 ## Compiling
 
@@ -63,6 +31,28 @@ Please note: The env variables need to be available from sudo
 ```bash
 Defaults env_keep += "DEVKITPRO DEVKITARM"
 ```
+
+| Make Commands    | Action                                                                                    |
+| -----------------| ----------------------------------------------------------------------------------------- |
+| make             | 
+| make 3ds         | The 3ds target will build a `<project name>.3ds` file.
+| make 3dsx        | The 3dsx target will build both a `<project name>.3dsx` and a `<project name>.smdh` files.
+| make cia         | The cia target will build a `<project name>.cia` file.
+| make citra       | The citra target will build a `<project name>.elf` file and automatically run citra.<sup>1</sup>
+| make elf         | The elf target will build a `<project name>.elf` file.
+| make fbi         | The fbi target will build a `<project name>.cia` file and send it to your 3ds via [FBI].
+| make hblauncher  | The hblauncher target will build a `<project name>.3dsx` file and send your 3ds via homebrew launcher.<sup>2</sup>
+| make release     | The release target will build `.elf`, `.3dsx`, `.cia`, `.3ds` files and a zip file (.3dsx and .smdh only).<sup>3</sup>
+
+**Notes:** 
+* <sup>1</sup> `make citra` requires having citra installed and in your `$PATH`)
+* <sup>2</sup> If you intend to use the hblauncher and fbi targets ensure you have set IP3DS in the `Makefile` to the ip address of your 3ds on your network.
+    * In homebrew launcher press Y and you can netload your 3dsx file.
+    * In [FBI] go to remote install and select `Receive URLs over the network`.
+* <sup>3</sup> This requires having [makerom] and [bannertool] both included in `buildtools` as 7z files.
+* If you are on windows you will need both of the following in your `$PATH` (included aswell)
+    * [zip] 
+    * [libbz2.dll]
 
 ### Windows
 Install the following using [devkitProUpdater]:
