@@ -2,7 +2,7 @@
 
 ![banner](resources/ghpreview.png)
 
-An interpreter and text editor for a subset of the [Caml Programming Language](https://en.wikipedia.org/wiki/Caml).
+An interpreter and text editor for a subset of the [Caml Programming Language](https://en.wikipedia.org/wiki/Caml) for the Nintendo 3DS.
 
 ## Progress
 
