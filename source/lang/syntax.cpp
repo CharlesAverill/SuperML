@@ -146,6 +146,8 @@ bool typesEqual(Type* a, Type* b) {
                    typesEqual(a->typeData.arrowType->rightType,
                               b->typeData.arrowType->rightType);
     }
+
+    return false;
 }
 
 bool termsEqual(Term* a, Term* b) {
@@ -171,6 +173,8 @@ bool termsEqual(Term* a, Term* b) {
         case TmVar:
             return a->value.varValue->name == b->value.varValue->name;
     }
+
+    return false;
 }
 
 void freeTerm(Term* term) {

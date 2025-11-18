@@ -9,6 +9,15 @@ struct State {
     unsigned long long int fuel;
 };
 
-void step(State* state);
+enum ReturnCode {
+    Ok,
+    OutOfFuel
+};
+
+bool step(State* state);
+ReturnCode run(Term* program);
+void stepCallback(State* state);
+
+ReturnCode interpreterMain(std::string programText);
 
 #endif /* INTERPRETER */

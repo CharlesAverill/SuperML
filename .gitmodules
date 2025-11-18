@@ -1,0 +1,3 @@
+[submodule "source/Notepad3DS"]
+	path = source/Notepad3DS
+	url = https://github.com/MaeveMcT/Notepad3DS.git

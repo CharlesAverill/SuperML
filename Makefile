@@ -65,7 +65,8 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 recurse = $(shell find $2 -type $1 -name '$3' 2> /dev/null)
 
 CFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.c)))
-CPPFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.cpp)))
+ALL_CPP := $(foreach dir,$(SOURCES),$(call recurse,f,$(dir),*.cpp))
+CPPFILES := $(notdir $(filter-out %/Notepad3DS/source/main.cpp,$(foreach dir,$(SOURCES),$(call recurse,f,$(dir),*.cpp))))
 SFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.s)))
 PICAFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.pica)))
 SHLISTFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.shlist)))
@@ -115,7 +116,7 @@ cia: $(BUILD) $(OUTPUT_DIR)
 elf: $(BUILD) $(OUTPUT_DIR)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile $@
 
-citra: $(BUILD) $(OUTPUT_DIR)
+azahar: $(BUILD) $(OUTPUT_DIR)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile $@
 
 hblauncher: $(BUILD) $(OUTPUT_DIR)
@@ -198,7 +199,7 @@ endif
 #---------------------------------------------------------------------------------
 # Main Targets
 #---------------------------------------------------------------------------------
-.PHONY: all 3dsx cia elf 3ds citra fbi hblauncher
+.PHONY: all 3dsx cia elf 3ds azahar fbi hblauncher
 all: $(OUTPUT_FILE).zip $(OUTPUT_FILE).3ds $(OUTPUT_FILE).cia
 
 banner.bnr: $(BANNER_IMAGE_FILE) $(BANNER_AUDIO_FILE)
@@ -236,8 +237,8 @@ cia : $(OUTPUT_FILE).cia
 
 elf : $(OUTPUT_FILE).elf
 
-citra : $(OUTPUT_FILE).3dsx
-	citra $(OUTPUT_FILE).3dsx
+azahar : $(OUTPUT_FILE).3dsx
+	./run.sh
 
 fbi : $(OUTPUT_FILE).cia
 	python ../buildtools/servefiles.py $(IP3DS) $(OUTPUT_FILE).cia

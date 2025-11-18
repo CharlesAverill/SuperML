@@ -4,6 +4,8 @@
 
 An interpreter and text editor for a subset of the [Caml Programming Language](https://en.wikipedia.org/wiki/Caml).
 
+Great thanks to [Notepad3DS](https://github.com/MaeveMcT/Notepad3DS) as a jumping-off point for the text editor segment of this project.
+
 ## Progress
 
 So far this is a very rudimentary text editor and a disconnected interpreter interface.
@@ -40,14 +42,13 @@ Defaults env_keep += "DEVKITPRO DEVKITARM"
 | make 3ds         | The 3ds target will build a `<project name>.3ds` file.
 | make 3dsx        | The 3dsx target will build both a `<project name>.3dsx` and a `<project name>.smdh` files.
 | make cia         | The cia target will build a `<project name>.cia` file.
-| make citra       | The citra target will build a `<project name>.elf` file and automatically run citra.<sup>1</sup>
+| make azahar      | The azahar target will build a `<project name>.3dsx` file and automatically run azahar.
 | make elf         | The elf target will build a `<project name>.elf` file.
 | make fbi         | The fbi target will build a `<project name>.cia` file and send it to your 3ds via [FBI].
 | make hblauncher  | The hblauncher target will build a `<project name>.3dsx` file and send your 3ds via homebrew launcher.<sup>2</sup>
 | make release     | The release target will build `.elf`, `.3dsx`, `.cia`, `.3ds` files and a zip file (.3dsx and .smdh only).<sup>3</sup>
 
 **Notes:** 
-* <sup>1</sup> `make citra` requires having citra installed and in your `$PATH`)
 * <sup>2</sup> If you intend to use the hblauncher and fbi targets ensure you have set IP3DS in the `Makefile` to the ip address of your 3ds on your network.
     * In homebrew launcher press Y and you can netload your 3dsx file.
     * In [FBI] go to remote install and select `Receive URLs over the network`.

@@ -1,138 +1,254 @@
+#include "Notepad3DS/source/display.h"
+#include "Notepad3DS/source/file.h"
+#include "Notepad3DS/source/file_io.h"
 #include <3ds.h>
+#include <algorithm>
+#include <iostream>
 #include <stdio.h>
-#include <stdlib.h>
-#include <memory>
-#include <math.h>
-#include <string>
+#include <string.h>
 
-#include "keyboard.h"
+#define BUFFER_SIZE 1025 // Notepad's line limit + \0
+#define MAX_BOTTOM_SIZE 28
 
-int main(int argc, char** argv) {
-    gfxInitDefault();
-    C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
-    C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
-    C2D_Prepare();
+#define VERSION "SuperML"
 
-    C3D_RenderTarget* top = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
-    C3D_RenderTarget* bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
+PrintConsole topScreen, bottomScreen;
+int scroll = 0;
+bool fast_scroll = false;
+std::string currentFilename;
 
-    initKeyboard();
+void move_down(File &file);
+void move_up(File &file);
 
-    std::string buffer = "let () =\n"
-                         "  print_endline \"hello world!\";\n"
-                         "  print_int 42";
-    size_t cursor = 0;
+unsigned int curr_line = 0;
 
-    keyboardFont = C2D_FontLoadSystem(CFG_REGION_USA);
-    PrintConsole bottomConsole;
+int main(int argc, char **argv) {
+  gfxInitDefault();
+  consoleInit(GFX_TOP, &topScreen);
+  consoleInit(GFX_BOTTOM, &bottomScreen);
+  consoleSelect(&bottomScreen);
+  // Software keyboard thanks to fincs
+  print_instructions();
 
-    C2D_TextBuf measureBuf = C2D_TextBufNew(4096);
-    C2D_TextBuf drawBuf    = C2D_TextBufNew(4096);
-    globalKeyBuf = C2D_TextBufNew(100);
-    const float topMaxWidth = 380.0f;
-    const float lineHeight = 14.0f;
+  print_version(VERSION);
 
-    while (aptMainLoop()) {
-        hidScanInput();
-        touchPosition touch;
-        hidTouchRead(&touch);
+  File file; // Use as default file
+  currentFilename = "(new file)";
 
-        u32 down = hidKeysDown();
+  update_screen(file, curr_line);
 
-        if (down & KEY_START) break;
+  while (aptMainLoop()) {
+    fast_scroll = false;
 
-        // Detect screen taps for keyboard
-        if (down & KEY_TOUCH) {
-            int idx = keyAt(touch.px, touch.py);
-            if (idx != -1) {
-                Key& k = keyboard[idx];
-                
-                if (isShift(k)) {
-                    // Toggle shift
-                    shiftActive = !shiftActive;
-                } else {
-                    // Insert character
-                    char c = getKeyChar(k);
-                    if (c != 0) {  // getKeyChar returns 0 for shift key
-                        buffer.insert(buffer.begin() + cursor, c);
-                        cursor++;
-                        
-                        // Un-toggle shift after typing
-                        shiftActive = false;
-                    }
-                }
-            }
+    hidScanInput();
+
+    u32 kDown = hidKeysDown();
+    u32 kHeld = hidKeysHeld();
+
+    // if (kDown & KEY_START)
+    //   break;
+
+    static SwkbdState swkbd;
+    static char mybuf[BUFFER_SIZE];
+    SwkbdButton button = SWKBD_BUTTON_NONE;
+    bool entered_text = false;
+
+    swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 1, -1);
+    swkbdSetValidation(&swkbd, SWKBD_ANYTHING, SWKBD_ANYTHING, 2);
+    swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
+
+    if (kDown & KEY_A) {
+      // Select current line for editing
+      swkbdSetHintText(&swkbd, "Input text here.");
+      // Iterator to find current selected line
+      auto line = file.lines.begin();
+      if (curr_line < file.lines.size()) {
+        if (curr_line != 0)
+          advance(line, curr_line);
+
+        if (curr_line == file.lines.size() - 1) {
+          file.lines.push_back(std::vector<char>{'\n'});
         }
+        // Need a char array to output to keyboard
+        char current_text[BUFFER_SIZE] = "";
+        copy(line->begin(), line->end(), current_text);
+        swkbdSetInitialText(&swkbd, current_text);
+      }
+      entered_text = true;
+      button = swkbdInputText(&swkbd, mybuf, sizeof(mybuf));
+    } else if (kDown & KEY_B) {
+      // Create new file
 
-        // Cursor movement
-        if (down & KEY_LEFT && cursor > 0) cursor--;
-        if (down & KEY_RIGHT && cursor < buffer.size()) cursor++;
+      // Clear buffer
+      memset(mybuf, '\0', BUFFER_SIZE);
+      // Confirm creating a new file
+      swkbdSetHintText(&swkbd,
+                       "Are you sure you want to open a BLANK file? y/n");
+      button = swkbdInputText(&swkbd, mybuf, sizeof(mybuf));
+      if (mybuf[0] == 'y') {
+        File blankFile;
+        file = blankFile;
+        curr_line = 0;
+        scroll = 0;
+        update_screen(file, curr_line);
+        print_save_status("New file created");
+      } else
+        print_save_status("No new file created");
+    } else if (kDown & KEY_R) {
+      // find a thing
 
-        // Prepare frame
-        C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-
-        // --- TOP SCREEN (text buffer) ---
-        C2D_TargetClear(top, C2D_Color32(255,255,255,255));
-        C2D_SceneBegin(top);
-
-        C2D_TextBufClear(measureBuf);
-        C2D_TextBufClear(drawBuf);
-        C2D_TextBufClear(globalKeyBuf);
-
-        float x = 10.0f;
-        float y = 10.0f;
-        size_t pos = 0;
-        while (pos < buffer.size()) {
-            // find how many characters fit on this line by trying increasingly larger substrings
-            size_t len = 0;
-            float used = 0.0f;
-
-            // try to grow the line until it would overflow or hit newline
-            for (size_t j = pos; j < buffer.size(); ++j) {
-                if (buffer[j] == '\n') { len = j - pos + 1; break; }
-
-                // prepare a small temporary null-terminated substring (or use C++ substr)
-                std::string candidate = buffer.substr(pos, j - pos + 1);
-                C2D_Text parsed;
-                C2D_TextParse(&parsed, measureBuf, candidate.c_str());
-                float w, h;
-                C2D_TextGetDimensions(&parsed, 0.6f, 0.6f, &w, &h);
-
-                if (w > topMaxWidth) {
-                    if (j == pos) {
-                        // single char too wide: force at least one char to avoid infinite loop
-                        len = 1;
-                    }
-                    break;
-                } else {
-                    len = j - pos + 1;
-                    used = w;
-                }
-            }
-
-            std::string line = buffer.substr(pos, len);
-            C2D_Text text;
-            C2D_TextParse(&text, drawBuf, line.c_str());
-            C2D_DrawText(&text, C2D_WithColor, x, y, 0.0f, 0.6f, 0.6f, C2D_Color32(0,0,0,255));
-
-            pos += len;
-            y += lineHeight;
+      // Clear buffer
+      memset(mybuf, '\0', BUFFER_SIZE);
+      // Get term to search for
+      swkbdSetHintText(&swkbd, "Input search term here.");
+      button = swkbdInputText(&swkbd, mybuf, sizeof(mybuf));
+      int line = file.find(mybuf);
+      if (line < 0)
+        printf("Could not find %s", mybuf);
+      else {
+        printf("Found %s at %d", mybuf, line);
+        curr_line = line;
+        if (curr_line > MAX_BOTTOM_SIZE) {
+          scroll = curr_line - MAX_BOTTOM_SIZE;
         }
+        update_screen(file, curr_line);
+      }
+    } else if (kHeld & KEY_L) {
+      // If held, allows for jumping to end and start of file
+      fast_scroll = true;
+    } else if (kDown & KEY_X) {
+      // Save current file
+      // Clear buffer
+      memset(mybuf, '\0', BUFFER_SIZE);
 
-        // --- BOTTOM SCREEN (keyboard) ---
-        C2D_TargetClear(bottom, C2D_Color32(200,200,200,255));
-        C2D_SceneBegin(bottom);
+      // Get file name
 
-        drawKeyboard();
+      swkbdSetHintText(&swkbd, "Input filename here.");
+      button = swkbdInputText(&swkbd, mybuf, sizeof(mybuf));
+      std::string filename = "";
+      for (int i = 0; mybuf[i] != '\0'; i++)
+        filename.push_back(mybuf[i]);
 
-        C3D_FrameEnd(0);
+      // Write out characters to file
+      bool success = write_to_file(filename, file);
+
+      if (success) {
+        status_message("Wrote to " + filename);
+      } else {
+        status_message("Couldn't write to " + filename);
+      }
+    } else if (kDown & KEY_Y) {
+      // Similar code to pressing X, see about refactoring
+      // Open a file
+      curr_line = 0;
+      scroll = 0;
+      // Clear buffer
+      memset(mybuf, '\0', BUFFER_SIZE);
+
+      // Get file name
+
+      swkbdSetHintText(&swkbd, "Input filename here.");
+      button = swkbdInputText(&swkbd, mybuf, sizeof(mybuf));
+      std::string filename = "";
+      for (int i = 0; mybuf[i] != '\0'; i++)
+        filename.push_back(mybuf[i]);
+      
+      if (!filename.empty()) {
+        File oldfile = file;
+        file = open_file(filename);
+
+        // print functions here seem to crash the program
+        if (file.read_success) {
+          currentFilename = filename;
+          update_screen(file, curr_line);
+          status_message("Opened " + filename);
+        } else {
+          file = oldfile;
+          update_screen(file, curr_line);
+          status_message("Failed to open " + filename);
+        }
+      }
     }
 
-    C2D_TextBufDelete(measureBuf);
-    C2D_TextBufDelete(drawBuf);
-    C2D_TextBufDelete(globalKeyBuf);
-    C2D_Fini();
-    C3D_Fini();
-    gfxExit();
-    return 0;
+    if ((kDown & KEY_DDOWN) | (kHeld & KEY_CPAD_DOWN)) {
+      // Move a line down (towards bottom of screen)
+      move_down(file);
+    } else if ((kDown & KEY_DUP) | (kHeld & KEY_CPAD_UP)) {
+      // Move a line up (towards top of screen)
+      move_up(file);
+    }
+
+    if (entered_text) {
+      if (button != SWKBD_BUTTON_NONE) {
+        std::vector<char> new_text = char_arr_to_vector(mybuf);
+
+        if (curr_line >= file.lines.size()) {
+          // Empty line, add a new one.
+          file.add_line(new_text);
+        } else {
+          file.edit_line(new_text, curr_line);
+        }
+        update_screen(file, curr_line);
+      } else
+        printf("swkbd event: %d\n", swkbdGetResult(&swkbd));
+    }
+
+    // Flush and swap framebuffers
+    gfxFlushBuffers();
+    gfxSwapBuffers();
+
+    gspWaitForVBlank();
+  }
+
+  gfxExit();
+  return 0;
+}
+
+void move_down(File &file) {
+  // Move a line down (towards bottom of screen)
+
+  if (fast_scroll) {
+    curr_line = file.lines.size();
+    scroll = curr_line - MAX_BOTTOM_SIZE;
+  } else {
+    if ((curr_line - scroll >= MAX_BOTTOM_SIZE)) {
+      scroll++;
+    }
+    curr_line++;
+  }
+
+  // Add new empty lines as needed
+  while (curr_line >= file.lines.size()) {
+    file.lines.push_back(std::vector<char>{'\n'});
+  }
+
+  update_screen(file, curr_line);
+}
+
+void move_up(File &file) {
+  // Move a line up (towards top of screen)
+  if (curr_line != 0) {
+    if (fast_scroll) {
+      // Jump to the top
+      curr_line = 0;
+      scroll = 0;
+    } else {
+      curr_line--;
+      if (curr_line - scroll <= 0 && scroll != 0) {
+        scroll--;
+      }
+    }
+
+    // Trim trailing empty lines after the current line
+    while (file.lines.size() > curr_line + 1) {
+      // Check if the last line is empty
+      auto &lastLine = file.lines.back();
+      if (lastLine.size() == 1 && lastLine[0] == '\n') {
+        file.lines.pop_back();
+      } else {
+        break; // Stop if we hit a non-empty line
+      }
+    }
+  }
+  update_screen(file, curr_line);
 }
