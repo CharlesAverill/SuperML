@@ -2,11 +2,12 @@
 #define INTERPRETER
 
 #include "reductions/reductions.h"
+#include "../Notepad3DS/source/file.h"
+#include "stdlib/stdlib.h"
 
 struct State {
-    Term* program;
     std::string outChannel;
-    unsigned long long int fuel;
+    Env env;
 };
 
 enum ReturnCode {
@@ -14,10 +15,7 @@ enum ReturnCode {
     OutOfFuel
 };
 
-bool step(State* state);
-ReturnCode run(Term* program);
 void stepCallback(State* state);
-
-ReturnCode interpreterMain(std::string programText);
+void interpreterMain(File* file);
 
 #endif /* INTERPRETER */

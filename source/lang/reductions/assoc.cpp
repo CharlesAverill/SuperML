@@ -10,7 +10,7 @@ Term* insert(const std::string& name, Type* type, Term* body, Term* continuation
             Term* newE2 = insert(name, type, innerLet->e2, continuation);
             
             // Rebuild the Let with the inserted continuation
-            Term* result = (Term*)malloc(sizeof(Term));
+            Term* result = new Term();
             result->kind = TmLet;
             result->type = body->type;
             
@@ -27,7 +27,7 @@ Term* insert(const std::string& name, Type* type, Term* body, Term* continuation
         default: {
             // Base case: body is not a Let/LetRec/LetTuple
             // Create a new Let with this body and the continuation
-            Term* result = (Term*)malloc(sizeof(Term));
+            Term* result = new Term();
             result->kind = TmLet;
             
             Let* newLet = new Let();
@@ -62,7 +62,7 @@ void assoc(Term* term) {
             Term* newTerm = insert(let->name, let->type, let->e1, let->e2);
             freeTerm(term);
             *term = *newTerm;
-            free(newTerm);
+            delete newTerm;
         }
         
         case TmTuple: {

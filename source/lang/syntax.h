@@ -17,6 +17,7 @@ enum TypeName {
     TBool,
     TInt,
     TFloat,
+    TString,
     TTuple,
     TArrow
 };
@@ -44,6 +45,7 @@ enum TermKind {
     TmBool,
     TmInt,
     TmFloat,
+    TmString,
     TmTuple,
     TmLet,
     TmAbs,
@@ -87,6 +89,7 @@ struct Term {
         bool boolValue;
         int intValue;
         float floatValue;
+        std::string *stringValue;
         Tuple *tupleValue;
         Let *letValue;
         Func *funcValue;
@@ -99,6 +102,7 @@ Term makeUnit(void);
 Term makeBool(bool b);
 Term makeInt(int i);
 Term makeFloat(float f);
+Term makeString(std::string str);
 Term makeTuple(Term* left, Term* right);
 Term makeLet(std::string name, Type* type, Term* e1, Term* e2);
 Term makeFunc(std::string paramName, Type* paramType, Term* body);
@@ -110,8 +114,12 @@ Type makeUnitType(void);
 Type makeBoolType(void);
 Type makeIntType(void);
 Type makeFloatType(void);
+Type makeStringType(void);
 Type makeTupleType(Type* left, Type* right);
 Type makeArrowType(Type* param, Type* ret);
+
+Term *copyTerm(Term* term);
+Type *copyType(Type* type);
 
 bool typesEqual(Type* a, Type* b);
 bool termsEqual(Term* a, Term* b);

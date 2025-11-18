@@ -1,6 +1,6 @@
 #include "reductions.h"
 
-Term* find(const std::string& name, const env& env) {
+Term* find(const std::string& name, const Env& env) {
     auto it = env.find(name);
     if (it != env.end() && it->second != nullptr) {
         return it->second;
@@ -8,15 +8,7 @@ Term* find(const std::string& name, const env& env) {
     return nullptr; 
 }
 
-Term* copyTerm(Term* t) {
-    Term* copy = (Term*)malloc(sizeof(Term));
-    copy->kind = t->kind;
-    copy->type = t->type;
-    copy->value = t->value;
-    return copy;
-}
-
-void _beta(Term* term, env& env) {
+void _beta(Term* term, Env& env) {
     switch (term->kind) {
         case TmUnit:
         case TmBool:
@@ -84,6 +76,6 @@ void _beta(Term* term, env& env) {
 }
 
 void beta(Term* term) {
-    env emptyEnv;
+    Env emptyEnv;
     _beta(term, emptyEnv);
 }
