@@ -12,26 +12,28 @@ int main(int argc, char **argv) {
   consoleInit(GFX_TOP, &topScreen);
   consoleInit(GFX_BOTTOM, &bottomScreen);
 
+  aptSetHomeAllowed(false);
+
   keybaordInit();
 
   while (aptMainLoop()) {
+    gspWaitForVBlank();
+    // gfxFlushBuffers();
+    gfxSwapBuffers();
     hidScanInput();
     u32 kDown = hidKeysDown();
     u32 kHeld = hidKeysHeld();
 
     keyboardMain(kDown, kHeld);
-
-    if (kDown & KEY_SELECT) {
+    if (kDown & KEY_START) {
+      break;
+    } else if (kDown & KEY_SELECT) {
       clear_screen();
       consoleSelect(&topScreen);
       interpreterMain(getFile());
     }
 
     // Flush and swap framebuffers
-    gfxFlushBuffers();
-    gfxSwapBuffers();
-
-    gspWaitForVBlank();
   }
 
   gfxExit();

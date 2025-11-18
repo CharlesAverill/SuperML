@@ -16,6 +16,7 @@ void move_up(File &file);
 unsigned int curr_line = 0;
 
 File file;
+static SwkbdState swkbd;
 
 File* getFile(void) {
   return &file;
@@ -29,6 +30,10 @@ void keybaordInit(void) {
   print_version(VERSION);
   currentFilename = "(new file)";
 
+  swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 1, -1);
+  swkbdSetValidation(&swkbd, SWKBD_ANYTHING, SWKBD_ANYTHING, 2);
+  swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
+
   update_screen(file, curr_line);
 }
 
@@ -38,14 +43,9 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
   // if (kDown & KEY_START)
   //   break;
 
-  static SwkbdState swkbd;
   static char mybuf[BUFFER_SIZE];
   SwkbdButton button = SWKBD_BUTTON_NONE;
   bool entered_text = false;
-
-  swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 1, -1);
-  swkbdSetValidation(&swkbd, SWKBD_ANYTHING, SWKBD_ANYTHING, 2);
-  swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
 
   if (kDown & KEY_A) {
     // Select current line for editing
@@ -80,9 +80,9 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
       curr_line = 0;
       scroll = 0;
       update_screen(file, curr_line);
-      print_save_status("New file created");
+      status_message("New file created");
     } else
-      print_save_status("No new file created");
+      status_message("Couldn't create new file");
   } else if (kDown & KEY_R) {
     // find a thing
 

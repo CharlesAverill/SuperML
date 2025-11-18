@@ -14,7 +14,7 @@ endif
 include $(DEVKITARM)/3ds_rules
 
 # ip address of 3ds for hblauncher/fbi target.
-IP3DS := 192.168.1.11
+IP3DS := 192.168.6.26
 
 #---------------------------------------------------------------------------------
 # Directory Setup
@@ -237,8 +237,9 @@ cia : $(OUTPUT_FILE).cia
 
 elf : $(OUTPUT_FILE).elf
 
+AZAHAR=flatpak run org.azahar_emu.Azahar
 azahar : $(OUTPUT_FILE).3dsx
-	./run.sh
+	$(AZAHAR) output/SuperML.3dsx
 
 fbi : $(OUTPUT_FILE).cia
 	python ../buildtools/servefiles.py $(IP3DS) $(OUTPUT_FILE).cia
