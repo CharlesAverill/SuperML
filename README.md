@@ -17,6 +17,29 @@ Todos:
 
 ## Compiling
 
+### Setup
+
+```bash
+# Clone with submodules
+git clone --recursive git@github.com:CharlesAverill/SuperML.git
+
+# Install bannertool
+git clone https://github.com/carstene1ns/3ds-bannertool.git --depth=1 && cd 3ds-bannertool
+cmake -B build && cmake --build build && sudo cmake --install build
+cd ..
+
+# Install makerom
+git clone https://github.com/3DSGuy/Project_CTR.git --depth=1 && cd Project_CTR/makerom
+make deps && make program && sudo cp bin/makerom /usr/bin
+cd ../../
+
+# Build SuperML
+cd SuperML
+make
+```
+
+Install [bannertool](https://github.com/carstene1ns/3ds-bannertool.git)
+
 ### Unix
 You will need [devkitArm] which can be obtained with
 
