@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
     if (kDown & KEY_START) {
       break;
     } else if (kDown & KEY_SELECT) {
-      clear_screen();
+      clear_top_screen();
       consoleSelect(&topScreen);
       interpreterMain(getFile());
     }

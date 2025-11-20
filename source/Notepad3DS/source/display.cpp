@@ -4,49 +4,75 @@
 #include <iterator>
 #include <stdio.h>
 #include <math.h>
-void clear_screen() {
-    consoleSelect(&topScreen);
-    //Cursor to top left
-    std::cout << SCREEN_START_POINT;
-    //Clear screen with empty lines
-    for (int i = 0; i < CLEAR_SCREEN_LINES; i++)
-        std::cout << std::string(70, ' ');
-    std::cout << SCREEN_START_POINT;
+
+void clear_range(PrintConsole *screen, std::string start_point, int clear_lines, int clear_width) {
+    consoleSelect(screen);
+    std::cout << start_point;
+    for (int i = 0; i < clear_lines; i++)
+        std::cout << std::string(clear_width, ' ');
+    std::cout << start_point;
 }
 
-void clear_save_status() {
-    consoleSelect(&bottomScreen);
-    printf(SAVE_STATUS_LINE);
-    printf("                                               ");
-    printf(SAVE_STATUS_LINE);
+void clear_top_screen() {
+    clear_range(&topScreen, SCREEN_START_POINT, CLEAR_SCREEN_LINES, 70);
 }
 
-void print_version(std::string version) {
+void clear_bottom_screen() {
+    clear_range(&bottomScreen, SCREEN_START_POINT, CLEAR_SCREEN_LINES, 70);
+}
+
+void print_centered_header(std::string text, char padding) {
+    int text_len = text.length();
+    
+    // Calculate padding on each side
+    int total_equals = MAX_BOT_WIDTH - text_len - 2;
+    int left_equals = total_equals / 2;
+    int right_equals = total_equals - left_equals;
+    
+    // Print the header
+    std::cout << std::string(left_equals, padding) 
+              << " " << text << " " 
+              << std::string(right_equals, padding);
+}
+
+void print_version() {
     consoleSelect(&bottomScreen);
     printf(VERSION_LINE);
-    std::cout << version << std::endl;
+    print_centered_header(VERSION, ' ');
 }
 
 void print_instructions() {
     consoleSelect(&bottomScreen);
-    printf(INSTRUCTION_LINE);
-	printf("Press A to select current line\n");
-	printf("Press B to create a new file\n");
-	printf("Press X to save file\n");
-	printf("Press Y to open file\n");
-    printf("Press R to search file\n");
-    printf("Hold L to jump to top/end with up/down\n");
-    printf("Press DPad or CPad to move up/down\n");
-	printf("Press START to exit\n");
+    printf(INSTRUCTIONS_LINE);
+    print_centered_header("CONTROLS", '-');
+    printf("(A): Edit selected line\n"
+           "(B): New file\n"
+           "(X): Save file\n"
+           "(Y): Open file\n"
+           "(R): Search\n"
+           "(L + DPad): Jump to top/bottom\n"
+           "(DPad): Change selected line\n"
+           "(START): Exit to Home Menu\n"
+           "(SELECT): Interpret and Run\n");
 }
 
+void print_status(File& file, int current_line) {
+    clear_range(&bottomScreen, STATUS_LINE, STATUS_LINES, MAX_BOT_WIDTH);
+    print_centered_header("STATUS", '-');
+    printf("%s:L%d/%d\n", currentFilename.c_str(), current_line, file.lines.size());
+}
+
+void status_message(std::string msg) {
+    clear_range(&bottomScreen, STATUS_MSG_LINE, 1, MAX_BOT_WIDTH);
+    printf("%s\n", msg.c_str());
+}
 
 std::string char_vec_to_string(std::vector<char>& line) {
 
                 std::string temp_str = "";
                 int letters = 0;
                 for (const auto& ch : line) {
-                    if (letters != MAX_WIDTH) {
+                    if (letters != MAX_TOP_WIDTH) {
                         //Store characters to display
                         temp_str.push_back(ch); 
                         letters++;
@@ -78,43 +104,12 @@ void print_text(const char* str, unsigned int count, unsigned int selected_line)
                 }
 }
 
-void print_save_status(std::string message) {
-    clear_save_status();
-    std::cout << message << std::endl;
-}
-
-void clear_line_status() {
-    consoleSelect(&bottomScreen);
-    printf(LINE_STATUS_LINE);
-    printf("                                               ");
-    printf(LINE_STATUS_LINE);
-}
-
-void print_line_status(unsigned int current_line) {
-    clear_line_status();
-    std::cout << "Current line: " << current_line+1;
-}
-
-void clear_directory_status() {
-    consoleSelect(&bottomScreen);
-    printf(DIRECTORY_LINE);
-    printf("                                               ");
-    printf(DIRECTORY_LINE);
-}
-
-void print_directory_status(std::string filename) {
-    clear_directory_status();
-    std::cout << "Current directory: " << filename;
-
-}
-
 void update_screen(File& file, unsigned int current_line) {
-    clear_screen();
-    consoleSelect(&bottomScreen);
-    print_line_status(current_line);
+    clear_top_screen();
+    print_status(file, current_line);
     consoleSelect(&topScreen);
     unsigned int count = 0;
-    
+
     //No scrolling needed
     if (file.lines.size() - 1 <= MAX_LINES) {
         for (auto iter = file.lines.begin(); iter != file.lines.end(); iter++) {

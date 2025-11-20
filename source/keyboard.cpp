@@ -27,7 +27,7 @@ void keybaordInit(void) {
   // Software keyboard thanks to fincs
   print_instructions();
 
-  print_version(VERSION);
+  print_version();
   currentFilename = "(new file)";
 
   swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 1, -1);
