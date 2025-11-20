@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     } else if (kDown & KEY_SELECT) {
       clear_top_screen();
       consoleSelect(&topScreen);
-      interpreterMain(getFile());
+      interpreterMain(currentFilename);
     }
 
     // Flush and swap framebuffers

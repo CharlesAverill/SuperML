@@ -1,5 +1,7 @@
 .SUFFIXES:
 
+PWD= $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
+
 #---------------------------------------------------------------------------------
 # Environment Setup
 #---------------------------------------------------------------------------------
@@ -45,9 +47,7 @@ COMMON_FLAGS := -g -Wall -Wno-strict-aliasing -O3 -mword-relocations -fomit-fram
 	-ffast-math $(ARCH) $(INCLUDE) -D__3DS__ $(BUILD_FLAGS)
 CFLAGS := $(COMMON_FLAGS) -std=gnu99
 CXXFLAGS := $(COMMON_FLAGS) -std=gnu++11
-ifeq ($(ENABLE_EXCEPTIONS),)
-	CXXFLAGS += -fno-rtti -fno-exceptions
-endif
+# CXXFLAGS += -fno-rtti -fno-exceptions
 
 ASFLAGS := -g $(ARCH)
 LDFLAGS = -specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
@@ -64,9 +64,24 @@ ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 recurse = $(shell find $2 -type $1 -name '$3' 2> /dev/null)
 
+# Locations of your grammar files
+PARSER_DIR := source/lang/parser
+LEXER_FILE := $(PARSER_DIR)/lexer.l
+PARSER_FILE := $(PARSER_DIR)/parser.y
+
+# Outputs
+PARSER_CPP    := $(PARSER_DIR)/parser.cpp
+PARSER_HPP    := $(PARSER_DIR)/parser.hpp
+LEXER_CPP   := $(PARSER_DIR)/lex.cpp
+LEXER_HPP     := $(PARSER_DIR)/lex.hpp
+PARSER_OUT  := $(PARSER_CPP) $(PARSER_HPP) $(LEXER_CPP) $(LEXER_HPP) \
+	$(PARSER_DIR)/location.hh $(PARSER_DIR)/position.hh $(PARSER_DIR)/parser.output \ $(PARSER_DIR)/stack.hh
+
 CFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.c)))
 ALL_CPP := $(foreach dir,$(SOURCES),$(call recurse,f,$(dir),*.cpp))
-CPPFILES := $(notdir $(filter-out %/Notepad3DS/source/main.cpp,$(foreach dir,$(SOURCES),$(call recurse,f,$(dir),*.cpp))))
+CPPFILES := $(notdir $(PARSER_CPP) $(LEXER_CPP) $(filter-out \
+    %/lang/devel.cpp \
+    ,$(foreach dir,$(SOURCES),$(call recurse,f,$(dir),*.cpp)))) 
 SFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.s)))
 PICAFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.pica)))
 SHLISTFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.shlist)))
@@ -104,7 +119,7 @@ OUTPUT_DIR := $(TOPDIR)/$(OUTPUT)
 all: $(BUILD) $(OUTPUT_DIR)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
-3dsx: $(BUILD) $(OUTPUT_DIR)
+3dsx: parser $(BUILD) $(OUTPUT_DIR)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile $@
 
 cia: $(BUILD) $(OUTPUT_DIR)
@@ -133,7 +148,7 @@ $(OUTPUT_DIR):
 
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(OUTPUT)
+	@rm -fr $(BUILD) $(OUTPUT) $(DEVEL_OBJECTS) $(PARSER_OUT)
 
 #---------------------------------------------------------------------------------
 else
@@ -285,3 +300,50 @@ endef
 #---------------------------------------------------------------------------------------
 endif
 #---------------------------------------------------------------------------------------
+
+# ---------------------------------------------------------
+# Parser (Bison) + Lexer (Flex) generation
+# ---------------------------------------------------------
+
+# Rule: generate parser (parser.tab.cpp + parser.tab.hpp)
+$(PARSER_CPP) $(PARSER_HPP): $(PARSER_FILE)
+	bison -d -v -o $(PARSER_CPP) $(PARSER_FILE)
+
+# Rule: generate lexer (lex.yy.cpp + optional header)
+$(LEXER_CPP): $(LEXER_FILE) $(PARSER_HPP)
+	flex -o $(LEXER_CPP) $(LEXER_FILE)
+	sed -i 's/#include <FlexLexer.h>/#include "FlexLexer.h"/' $(LEXER_CPP)
+
+# Convenience rule: rebuild both lexer & parser
+parser: $(PARSER_CPP) $(LEXER_CPP)
+
+# -----------------------------
+# Host (desktop) interpreter build
+# -----------------------------
+
+DEVEL_DIR := build
+DEVEL_BIN := $(DEVEL_DIR)/devel
+
+DEVEL_SOURCES := \
+    $(filter-out $(PARSER_CPP) $(LEXER_CPP),$(shell find $(PWD)/$(SOURCES)/lang -type f -name '*.cpp')) \
+    source/Notepad3DS/source/file.cpp \
+    source/Notepad3DS/source/file_io.cpp
+
+DEVEL_OBJECTS := $(DEVEL_SOURCES:.cpp=.o)
+
+HOST_CXX := g++
+HOST_CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers
+
+.PHONY: devel
+devel: $(DEVEL_BIN)
+
+$(DEVEL_BIN): $(PARSER_CPP) $(LEXER_CPP) $(DEVEL_OBJECTS)
+	mkdir -p $(DEVEL_DIR)
+	$(HOST_CXX) $(HOST_CXXFLAGS) -o $@ $^
+
+# Host-only .o rule
+# (Make sure it does NOT override the 3DS one; order matters!)
+$(DEVEL_OBJECTS): | $(PARSER_CPP) $(PARSER_HPP) $(LEXER_CPP)
+
+$(DEVEL_OBJECTS): %.o: %.cpp $(PARSER_CPP)
+	$(HOST_CXX) $(HOST_CXXFLAGS) -c $< -o $@

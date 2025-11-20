@@ -2,7 +2,7 @@
 
 // Helper function: insert a let binding at the deepest point
 // This recursively finds nested Let/LetRec/LetTuple and goes to the bottom
-Term* insert(const std::string& name, Type* type, Term* body, Term* continuation) {
+Term* insert(const std::string& name, Type type, Term* body, Term* continuation) {
     switch (body->kind) {
         case TmLet: {
             // If body is a Let, recurse deeper
@@ -63,23 +63,27 @@ void assoc(Term* term) {
             freeTerm(term);
             *term = *newTerm;
             delete newTerm;
+            break;
         }
         
         case TmTuple: {
             Tuple* tuple = term->value.tupleValue;
             assoc(tuple->leftValue);
             assoc(tuple->rightValue);
+            break;
         }
         
         case TmAbs: {
             Func* func = term->value.funcValue;            
             assoc(func->body);
+            break;
         }
         
         case TmApp: {
             Application* app = term->value.appValue;
             assoc(app->left);
             assoc(app->right);
+            break;
         }
         
         default:

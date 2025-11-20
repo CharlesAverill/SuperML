@@ -87,8 +87,8 @@ Term makeTuple(Term* left, Term* right) {
     return out;
 }
 
-Term makeLet(std::string name, Type* type, Term* e1, Term* e2) {
-    Term out = {.kind=TmLet, .type=*type};
+Term makeLet(std::string name, Type type, Term* e1, Term* e2) {
+    Term out = {.kind=TmLet, .type=type};
     Let *let = new Let();
     let->name = name;
     let->type = type;
@@ -98,18 +98,18 @@ Term makeLet(std::string name, Type* type, Term* e1, Term* e2) {
     return out;
 }
 
-Term makeFunc(std::string paramName, Type* paramType, Term* body) {
-    Term out = {.kind=TmAbs, .type=makeArrowType(paramType, &body->type)};
+Term makeFunc(std::string paramName, Type paramType, Term* body) {
     Func *func = new Func();
     func->paramName = paramName;
     func->paramType = paramType;
     func->body = body;
+    Term out = {.kind=TmAbs, .type=makeArrowType(&func->paramType, &body->type)};
     out.value.funcValue = func;
     return out;
 }
 
-Term makeApp(Term* function, Term* argument, Type* type) {
-    Term out = {.kind=TmApp, .type=*type};
+Term makeApp(Term* function, Term* argument, Type type) {
+    Term out = {.kind=TmApp, .type=type};
     Application *app = new Application();
     app->left = function;
     app->right = argument;
@@ -118,8 +118,8 @@ Term makeApp(Term* function, Term* argument, Type* type) {
     return out;
 }
 
-Term makeVar(std::string name, int index, Type *t) {
-    Term out = {.kind=TmVar, .type=*t};
+Term makeVar(std::string name, int index, Type t) {
+    Term out = {.kind=TmVar, .type=t};
     Variable *var = new Variable();
     var->name = name;
     var->index = index;
@@ -199,7 +199,6 @@ void freeOnlyTerm(Term* term) {
             delete term->value.tupleValue;
             break;
         case TmAbs:
-            freeType(term->value.funcValue->paramType);
             freeTerm(term->value.funcValue->body);
             delete term->value.funcValue;
             break;
@@ -280,7 +279,7 @@ Term* copyTerm(Term* t) {
         case TmVar: {
             Variable* v = t->value.varValue;
             Term* r = new Term(
-                makeVar(v->name, v->index, copyType(&t->type))
+                makeVar(v->name, v->index, t->type)
             );
             return r;
         }
@@ -308,7 +307,7 @@ Term* copyTerm(Term* t) {
             Term* e1 = copyTerm(letv->e1);
             Term* e2 = copyTerm(letv->e2);
 
-            Term r = makeLet(letv->name, copyType(letv->type), e1, e2);
+            Term r = makeLet(letv->name, letv->type, e1, e2);
             r.type = t->type;
 
             return new Term(r);
@@ -324,7 +323,7 @@ Term* copyTerm(Term* t) {
 
             Term r = makeFunc(
                 f->paramName,
-                copyType(f->paramType),
+                f->paramType,
                 body2
             );
             r.type = t->type;
@@ -341,7 +340,7 @@ Term* copyTerm(Term* t) {
             Term* left2  = copyTerm(a->left);
             Term* right2 = copyTerm(a->right);
 
-            Term r = makeApp(left2, right2, copyType(&t->type));
+            Term r = makeApp(left2, right2, t->type);
             r.type = t->type;
 
             return new Term(r);

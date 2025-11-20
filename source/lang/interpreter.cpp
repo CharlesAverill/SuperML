@@ -1,4 +1,8 @@
 #include "interpreter.h"
+#include "parser/driver.hpp"
+#include "syntax.h"
+#include <fstream>
+#include <iostream>
 
 bool isValue(Term* term) {
     switch (term->kind) {
@@ -53,7 +57,7 @@ Term* substitute(Term* term, const std::string& name, Term* replacement) {
             Term* left2  = substitute(a->left,  name, replacement);
             Term* right2 = substitute(a->right, name, replacement);
 
-            return new Term(makeApp(left2, right2, &term->type));
+            return new Term(makeApp(left2, right2, term->type));
         }
 
         // ----------------------------
@@ -134,9 +138,9 @@ bool step(Term* program, State* state) {
                 freeTerm(program);
                 *program = *newBody;
                 return true;
-            } else {
-                return false;
             }
+
+            return false;
         }
         default:
             return false;
@@ -144,15 +148,19 @@ bool step(Term* program, State* state) {
 }
 
 
-void interpreterMain(File* file) {
+void interpreterMain(std::string filename) {
     initPrimitives();
 
-    Type str = makeStringType();
-    Type unit = makeUnitType();
-    Type ty = makeArrowType(&str, &unit);
-    Term helloFunc = makeVar("print_endline", -1, &ty);
-    Term strarg = makeString("Hello, World!");
-    Term prog = makeApp(&helloFunc, &strarg, &unit);
+    MC::MC_Driver driver;
+    driver.parse(filename.c_str());
+    Term prog = *driver.root_term;
+
+    // Type str = makeStringType();
+    // Type unit = makeUnitType();
+    // Type ty = makeArrowType(&str, &unit);
+    // Term helloFunc = makeVar("print_endline", -1, ty);
+    // Term strarg = makeString("Hello, World!");
+    // Term prog = makeApp(&helloFunc, &strarg, unit);
 
     reduce(&prog);
 

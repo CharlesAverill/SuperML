@@ -1,0 +1,587 @@
+State 32 conflicts: 1 shift/reduce
+
+
+Grammar
+
+    0 $accept: term $end
+
+    1 term: LET ID COLON type '=' term IN term
+    2     | FUN ID COLON type ARROW term
+    3     | app_term
+
+    4 app_term: app_term simple_term
+    5         | simple_term
+
+    6 simple_term: atom
+    7            | LPAREN term RPAREN
+
+    8 atom: TRUE
+    9     | FALSE
+   10     | INTLIT
+   11     | FLOATLIT
+   12     | STRINGLIT
+   13     | LPAREN RPAREN
+   14     | ID
+   15     | LPAREN term COMMA term RPAREN
+
+   16 type: arrow_type
+
+   17 arrow_type: tuple_type ARROW arrow_type
+   18           | tuple_type
+
+   19 tuple_type: tuple_type STAR base_type
+   20           | base_type
+
+   21 base_type: LPAREN type RPAREN
+   22          | UNIT
+   23          | BOOL
+   24          | INT
+   25          | FLOAT
+   26          | STRING
+
+
+Terminals, with rules where they appear
+
+    $end (0) 0
+    '=' (61) 1
+    error (256)
+    LET (258) 1
+    IN (259) 1
+    FUN (260) 2
+    COLON (261) 1 2
+    ARROW (262) 2 17
+    STAR (263) 19
+    COMMA (264) 15
+    LPAREN (265) 7 13 15 21
+    RPAREN (266) 7 13 15 21
+    TRUE (267) 8
+    FALSE (268) 9
+    INTLIT <int> (269) 10
+    FLOATLIT <float> (270) 11
+    STRINGLIT <std::string> (271) 12
+    UNIT (272) 22
+    BOOL (273) 23
+    INT (274) 24
+    FLOAT (275) 25
+    STRING (276) 26
+    ID <std::string> (277) 1 2 14
+
+
+Nonterminals, with rules where they appear
+
+    $accept (24)
+        on left: 0
+    term <Term*> (25)
+        on left: 1 2 3
+        on right: 0 1 2 7 15
+    app_term <Term*> (26)
+        on left: 4 5
+        on right: 3 4
+    simple_term <Term*> (27)
+        on left: 6 7
+        on right: 4 5
+    atom <Term*> (28)
+        on left: 8 9 10 11 12 13 14 15
+        on right: 6
+    type <Type*> (29)
+        on left: 16
+        on right: 1 2 21
+    arrow_type <Type*> (30)
+        on left: 17 18
+        on right: 16 17
+    tuple_type <Type*> (31)
+        on left: 19 20
+        on right: 17 18 19
+    base_type <Type*> (32)
+        on left: 21 22 23 24 25 26
+        on right: 19 20
+
+
+State 0
+
+    0 $accept: • term $end
+
+    LET        shift, and go to state 1
+    FUN        shift, and go to state 2
+    LPAREN     shift, and go to state 3
+    TRUE       shift, and go to state 4
+    FALSE      shift, and go to state 5
+    INTLIT     shift, and go to state 6
+    FLOATLIT   shift, and go to state 7
+    STRINGLIT  shift, and go to state 8
+    ID         shift, and go to state 9
+
+    term         go to state 10
+    app_term     go to state 11
+    simple_term  go to state 12
+    atom         go to state 13
+
+
+State 1
+
+    1 term: LET • ID COLON type '=' term IN term
+
+    ID  shift, and go to state 14
+
+
+State 2
+
+    2 term: FUN • ID COLON type ARROW term
+
+    ID  shift, and go to state 15
+
+
+State 3
+
+    7 simple_term: LPAREN • term RPAREN
+   13 atom: LPAREN • RPAREN
+   15     | LPAREN • term COMMA term RPAREN
+
+    LET        shift, and go to state 1
+    FUN        shift, and go to state 2
+    LPAREN     shift, and go to state 3
+    RPAREN     shift, and go to state 16
+    TRUE       shift, and go to state 4
+    FALSE      shift, and go to state 5
+    INTLIT     shift, and go to state 6
+    FLOATLIT   shift, and go to state 7
+    STRINGLIT  shift, and go to state 8
+    ID         shift, and go to state 9
+
+    term         go to state 17
+    app_term     go to state 11
+    simple_term  go to state 12
+    atom         go to state 13
+
+
+State 4
+
+    8 atom: TRUE •
+
+    $default  reduce using rule 8 (atom)
+
+
+State 5
+
+    9 atom: FALSE •
+
+    $default  reduce using rule 9 (atom)
+
+
+State 6
+
+   10 atom: INTLIT •
+
+    $default  reduce using rule 10 (atom)
+
+
+State 7
+
+   11 atom: FLOATLIT •
+
+    $default  reduce using rule 11 (atom)
+
+
+State 8
+
+   12 atom: STRINGLIT •
+
+    $default  reduce using rule 12 (atom)
+
+
+State 9
+
+   14 atom: ID •
+
+    $default  reduce using rule 14 (atom)
+
+
+State 10
+
+    0 $accept: term • $end
+
+    $end  shift, and go to state 18
+
+
+State 11
+
+    3 term: app_term •
+    4 app_term: app_term • simple_term
+
+    LPAREN     shift, and go to state 3
+    TRUE       shift, and go to state 4
+    FALSE      shift, and go to state 5
+    INTLIT     shift, and go to state 6
+    FLOATLIT   shift, and go to state 7
+    STRINGLIT  shift, and go to state 8
+    ID         shift, and go to state 9
+
+    $default  reduce using rule 3 (term)
+
+    simple_term  go to state 19
+    atom         go to state 13
+
+
+State 12
+
+    5 app_term: simple_term •
+
+    $default  reduce using rule 5 (app_term)
+
+
+State 13
+
+    6 simple_term: atom •
+
+    $default  reduce using rule 6 (simple_term)
+
+
+State 14
+
+    1 term: LET ID • COLON type '=' term IN term
+
+    COLON  shift, and go to state 20
+
+
+State 15
+
+    2 term: FUN ID • COLON type ARROW term
+
+    COLON  shift, and go to state 21
+
+
+State 16
+
+   13 atom: LPAREN RPAREN •
+
+    $default  reduce using rule 13 (atom)
+
+
+State 17
+
+    7 simple_term: LPAREN term • RPAREN
+   15 atom: LPAREN term • COMMA term RPAREN
+
+    COMMA   shift, and go to state 22
+    RPAREN  shift, and go to state 23
+
+
+State 18
+
+    0 $accept: term $end •
+
+    $default  accept
+
+
+State 19
+
+    4 app_term: app_term simple_term •
+
+    $default  reduce using rule 4 (app_term)
+
+
+State 20
+
+    1 term: LET ID COLON • type '=' term IN term
+
+    LPAREN  shift, and go to state 24
+    UNIT    shift, and go to state 25
+    BOOL    shift, and go to state 26
+    INT     shift, and go to state 27
+    FLOAT   shift, and go to state 28
+    STRING  shift, and go to state 29
+
+    type        go to state 30
+    arrow_type  go to state 31
+    tuple_type  go to state 32
+    base_type   go to state 33
+
+
+State 21
+
+    2 term: FUN ID COLON • type ARROW term
+
+    LPAREN  shift, and go to state 24
+    UNIT    shift, and go to state 25
+    BOOL    shift, and go to state 26
+    INT     shift, and go to state 27
+    FLOAT   shift, and go to state 28
+    STRING  shift, and go to state 29
+
+    type        go to state 34
+    arrow_type  go to state 31
+    tuple_type  go to state 32
+    base_type   go to state 33
+
+
+State 22
+
+   15 atom: LPAREN term COMMA • term RPAREN
+
+    LET        shift, and go to state 1
+    FUN        shift, and go to state 2
+    LPAREN     shift, and go to state 3
+    TRUE       shift, and go to state 4
+    FALSE      shift, and go to state 5
+    INTLIT     shift, and go to state 6
+    FLOATLIT   shift, and go to state 7
+    STRINGLIT  shift, and go to state 8
+    ID         shift, and go to state 9
+
+    term         go to state 35
+    app_term     go to state 11
+    simple_term  go to state 12
+    atom         go to state 13
+
+
+State 23
+
+    7 simple_term: LPAREN term RPAREN •
+
+    $default  reduce using rule 7 (simple_term)
+
+
+State 24
+
+   21 base_type: LPAREN • type RPAREN
+
+    LPAREN  shift, and go to state 24
+    UNIT    shift, and go to state 25
+    BOOL    shift, and go to state 26
+    INT     shift, and go to state 27
+    FLOAT   shift, and go to state 28
+    STRING  shift, and go to state 29
+
+    type        go to state 36
+    arrow_type  go to state 31
+    tuple_type  go to state 32
+    base_type   go to state 33
+
+
+State 25
+
+   22 base_type: UNIT •
+
+    $default  reduce using rule 22 (base_type)
+
+
+State 26
+
+   23 base_type: BOOL •
+
+    $default  reduce using rule 23 (base_type)
+
+
+State 27
+
+   24 base_type: INT •
+
+    $default  reduce using rule 24 (base_type)
+
+
+State 28
+
+   25 base_type: FLOAT •
+
+    $default  reduce using rule 25 (base_type)
+
+
+State 29
+
+   26 base_type: STRING •
+
+    $default  reduce using rule 26 (base_type)
+
+
+State 30
+
+    1 term: LET ID COLON type • '=' term IN term
+
+    '='  shift, and go to state 37
+
+
+State 31
+
+   16 type: arrow_type •
+
+    $default  reduce using rule 16 (type)
+
+
+State 32
+
+   17 arrow_type: tuple_type • ARROW arrow_type
+   18           | tuple_type •
+   19 tuple_type: tuple_type • STAR base_type
+
+    ARROW  shift, and go to state 38
+    STAR   shift, and go to state 39
+
+    ARROW     [reduce using rule 18 (arrow_type)]
+    $default  reduce using rule 18 (arrow_type)
+
+
+State 33
+
+   20 tuple_type: base_type •
+
+    $default  reduce using rule 20 (tuple_type)
+
+
+State 34
+
+    2 term: FUN ID COLON type • ARROW term
+
+    ARROW  shift, and go to state 40
+
+
+State 35
+
+   15 atom: LPAREN term COMMA term • RPAREN
+
+    RPAREN  shift, and go to state 41
+
+
+State 36
+
+   21 base_type: LPAREN type • RPAREN
+
+    RPAREN  shift, and go to state 42
+
+
+State 37
+
+    1 term: LET ID COLON type '=' • term IN term
+
+    LET        shift, and go to state 1
+    FUN        shift, and go to state 2
+    LPAREN     shift, and go to state 3
+    TRUE       shift, and go to state 4
+    FALSE      shift, and go to state 5
+    INTLIT     shift, and go to state 6
+    FLOATLIT   shift, and go to state 7
+    STRINGLIT  shift, and go to state 8
+    ID         shift, and go to state 9
+
+    term         go to state 43
+    app_term     go to state 11
+    simple_term  go to state 12
+    atom         go to state 13
+
+
+State 38
+
+   17 arrow_type: tuple_type ARROW • arrow_type
+
+    LPAREN  shift, and go to state 24
+    UNIT    shift, and go to state 25
+    BOOL    shift, and go to state 26
+    INT     shift, and go to state 27
+    FLOAT   shift, and go to state 28
+    STRING  shift, and go to state 29
+
+    arrow_type  go to state 44
+    tuple_type  go to state 32
+    base_type   go to state 33
+
+
+State 39
+
+   19 tuple_type: tuple_type STAR • base_type
+
+    LPAREN  shift, and go to state 24
+    UNIT    shift, and go to state 25
+    BOOL    shift, and go to state 26
+    INT     shift, and go to state 27
+    FLOAT   shift, and go to state 28
+    STRING  shift, and go to state 29
+
+    base_type  go to state 45
+
+
+State 40
+
+    2 term: FUN ID COLON type ARROW • term
+
+    LET        shift, and go to state 1
+    FUN        shift, and go to state 2
+    LPAREN     shift, and go to state 3
+    TRUE       shift, and go to state 4
+    FALSE      shift, and go to state 5
+    INTLIT     shift, and go to state 6
+    FLOATLIT   shift, and go to state 7
+    STRINGLIT  shift, and go to state 8
+    ID         shift, and go to state 9
+
+    term         go to state 46
+    app_term     go to state 11
+    simple_term  go to state 12
+    atom         go to state 13
+
+
+State 41
+
+   15 atom: LPAREN term COMMA term RPAREN •
+
+    $default  reduce using rule 15 (atom)
+
+
+State 42
+
+   21 base_type: LPAREN type RPAREN •
+
+    $default  reduce using rule 21 (base_type)
+
+
+State 43
+
+    1 term: LET ID COLON type '=' term • IN term
+
+    IN  shift, and go to state 47
+
+
+State 44
+
+   17 arrow_type: tuple_type ARROW arrow_type •
+
+    $default  reduce using rule 17 (arrow_type)
+
+
+State 45
+
+   19 tuple_type: tuple_type STAR base_type •
+
+    $default  reduce using rule 19 (tuple_type)
+
+
+State 46
+
+    2 term: FUN ID COLON type ARROW term •
+
+    $default  reduce using rule 2 (term)
+
+
+State 47
+
+    1 term: LET ID COLON type '=' term IN • term
+
+    LET        shift, and go to state 1
+    FUN        shift, and go to state 2
+    LPAREN     shift, and go to state 3
+    TRUE       shift, and go to state 4
+    FALSE      shift, and go to state 5
+    INTLIT     shift, and go to state 6
+    FLOATLIT   shift, and go to state 7
+    STRINGLIT  shift, and go to state 8
+    ID         shift, and go to state 9
+
+    term         go to state 48
+    app_term     go to state 11
+    simple_term  go to state 12
+    atom         go to state 13
+
+
+State 48
+
+    1 term: LET ID COLON type '=' term IN term •
+
+    $default  reduce using rule 1 (term)

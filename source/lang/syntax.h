@@ -60,14 +60,14 @@ struct Tuple {
 
 struct Let {
     std::string name;
-    Type *type;
+    Type type;
     Term *e1;
     Term *e2;
 };
 
 struct Func {
     std::string paramName;
-    Type *paramType;
+    Type paramType;
     Term *body;
 };
 
@@ -104,10 +104,10 @@ Term makeInt(int i);
 Term makeFloat(float f);
 Term makeString(std::string str);
 Term makeTuple(Term* left, Term* right);
-Term makeLet(std::string name, Type* type, Term* e1, Term* e2);
-Term makeFunc(std::string paramName, Type* paramType, Term* body);
-Term makeApp(Term* function, Term* argument, Type* type);
-Term makeVar(std::string name, int index, Type *t);
+Term makeLet(std::string name, Type type, Term* e1, Term* e2);
+Term makeFunc(std::string paramName, Type paramType, Term* body);
+Term makeApp(Term* function, Term* argument, Type type);
+Term makeVar(std::string name, int index, Type t);
 
 Type makeUnknownType(void);
 Type makeUnitType(void);

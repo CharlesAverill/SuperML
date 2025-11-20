@@ -16,6 +16,6 @@ enum ReturnCode {
 };
 
 void stepCallback(State* state);
-void interpreterMain(File* file);
+void interpreterMain(std::string filename);
 
 #endif /* INTERPRETER */
