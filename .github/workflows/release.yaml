@@ -1,0 +1,136 @@
+name: Build and Release SuperML
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  make-release:
+    runs-on: ubuntu-latest
+    container:
+      image: 'devkitpro/devkitarm'
+
+    steps:
+    #------------------------------------------------------------
+    # Checkout
+    #------------------------------------------------------------
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    #------------------------------------------------------------
+    # Install dependencies (devkitARM + makerom + bannertool, etc.)
+    # You may need to add more depending on your 3DS toolchain setup.
+    #------------------------------------------------------------
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y qrencode flex bison jq
+
+        git clone https://github.com/carstene1ns/3ds-bannertool.git --depth=1 && cd 3ds-bannertool
+        cmake -B build && cmake --build build && sudo cmake --install build
+        cd ..
+
+        git clone https://github.com/3DSGuy/Project_CTR.git --depth=1
+        make -C Project_CTR/makerom deps -j
+        make -C Project_CTR/makerom program -j
+        sudo cp Project_CTR/makerom/bin/makerom /usr/bin
+
+    #------------------------------------------------------------
+    # Build your project
+    #------------------------------------------------------------
+    - name: Build SuperML
+      run: |
+        make clean
+        make 3dsx
+        make cia
+
+    #------------------------------------------------------------
+    # Create Release
+    #------------------------------------------------------------
+    - name: Create Release
+      id: create_release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: "build-${{ github.run_number }}"
+        name: "SuperML build ${{ github.sha }}"
+        draft: false
+        prerelease: false
+
+    #------------------------------------------------------------
+    # Upload CIA + 3DSX
+    #------------------------------------------------------------
+    - name: Upload binaries
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: build-${{ github.run_number }}
+        files: |
+          output/SuperML.3dsx
+          output/SuperML.cia
+
+    #------------------------------------------------------------
+    # Get final asset URLs from GitHub API
+    #------------------------------------------------------------
+    - name: Fetch asset URLs
+      id: asset_urls
+      run: |
+        release_id="${{ steps.create_release.outputs.id }}"
+        
+        json=$(curl -s \
+          -H "Accept: application/vnd.github+json" \
+          -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+          https://api.github.com/repos/${{ github.repository }}/releases/$release_id)
+
+        CIA_URL=$(echo "$json" | jq -r '.assets[] | select(.name=="SuperML.cia") | .browser_download_url')
+        DSX_URL=$(echo "$json" | jq -r '.assets[] | select(.name=="SuperML.3dsx") | .browser_download_url')
+
+        echo "cia_url=$CIA_URL" >> $GITHUB_OUTPUT
+        echo "dsx_url=$DSX_URL" >> $GITHUB_OUTPUT
+
+    #------------------------------------------------------------
+    # Generate QR codes using final URLs
+    #------------------------------------------------------------
+    - name: Generate QR codes
+      id: generate_qr
+      run: |
+        qrencode -o SuperML_CIA_QR.png "${{ steps.asset_urls.outputs.cia_url }}"
+        qrencode -o SuperML_3DSX_QR.png "${{ steps.asset_urls.outputs.dsx_url }}"
+
+    #------------------------------------------------------------
+    # Upload QR codes
+    #------------------------------------------------------------
+    - name: Upload QR codes
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: build-${{ github.run_number }}
+        files: |
+          SuperML_CIA_QR.png
+          SuperML_3DSX_QR.png
+
+    #------------------------------------------------------------
+    # Render release body using final URLs
+    #------------------------------------------------------------
+    - name: Render release body
+      id: render_body
+      run: |
+        TAG="build-${{ github.run_number }}"
+        sed \
+          -e "s|{{RAW_CIA}}|${{ steps.asset_urls.outputs.cia_url }}|g" \
+          -e "s|{{RAW_3DSX}}|${{ steps.asset_urls.outputs.dsx_url }}|g" \
+          -e "s|{{TAG}}|$TAG|g" \
+          .github/release_body.md.in > release.md
+        
+        echo 'markdown<<EOF' >> $GITHUB_OUTPUT
+        cat release.md >> $GITHUB_OUTPUT
+        echo 'EOF' >> $GITHUB_OUTPUT
+
+    #------------------------------------------------------------
+    # Edit release body
+    #------------------------------------------------------------
+    - name: Update Release Body
+      uses: irongut/EditRelease@v1.2.0
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        id: ${{ steps.create_release.outputs.id }}
+        body: |
+          ${{ steps.render_body.outputs.markdown }}
+        replacebody: true
