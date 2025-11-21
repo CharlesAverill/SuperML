@@ -8,20 +8,25 @@ Great thanks to [Notepad3DS](https://github.com/MaeveMcT/Notepad3DS) as a jumpin
 
 ## Progress
 
-So far this is a very rudimentary text editor and a disconnected interpreter interface.
-Todos:
+So far, we have:
 
-- Parsing
-- Execution
-- Load source files from ROMFS/SD card
+- Rudimentary builtin functions for IO
+- Rudimentary text editing
+- A WIP parser using Flex/Bison
+- Execution (crash-prone on real hardware)
 
 ## Compiling
 
 ### Setup
 
 ```bash
-# Clone with submodules
-git clone --recursive git@github.com:CharlesAverill/SuperML.git
+# Install dependencies
+sudo apt install -y flex bison
+
+# Install devkitARM (see below)
+
+# Clone
+git clone https://github.com/CharlesAverill/SuperML.git
 
 # Install bannertool
 git clone https://github.com/carstene1ns/3ds-bannertool.git --depth=1 && cd 3ds-bannertool
@@ -29,16 +34,15 @@ cmake -B build && cmake --build build && sudo cmake --install build
 cd ..
 
 # Install makerom
-git clone https://github.com/3DSGuy/Project_CTR.git --depth=1 && cd Project_CTR/makerom
-make deps && make program && sudo cp bin/makerom /usr/bin
-cd ../../
+git clone https://github.com/3DSGuy/Project_CTR.git --depth=1
+make -C Project_CTR/makerom deps -j
+make -C Project_CTR/makerom program -j
+sudo cp Project_CTR/makerom/bin/makerom /usr/bin
 
 # Build SuperML
 cd SuperML
 make
 ```
-
-Install [bannertool](https://github.com/carstene1ns/3ds-bannertool.git)
 
 ### Unix
 You will need [devkitArm] which can be obtained with
