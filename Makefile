@@ -70,18 +70,26 @@ LEXER_FILE := $(PARSER_DIR)/lexer.l
 PARSER_FILE := $(PARSER_DIR)/parser.y
 
 # Outputs
-PARSER_CPP    := $(PARSER_DIR)/parser.cpp
-PARSER_HPP    := $(PARSER_DIR)/parser.hpp
-LEXER_CPP   := $(PARSER_DIR)/lex.cpp
-LEXER_HPP     := $(PARSER_DIR)/lex.hpp
-PARSER_OUT  := $(PARSER_CPP) $(PARSER_HPP) $(LEXER_CPP) $(LEXER_HPP) \
-	$(PARSER_DIR)/location.hh $(PARSER_DIR)/position.hh $(PARSER_DIR)/parser.output \ $(PARSER_DIR)/stack.hh
+PARSER_CPP_3DS := $(PARSER_DIR)/parser_3ds.cpp
+LEXER_CPP_3DS  := $(PARSER_DIR)/lex_3ds.cpp
+
+# Host build outputs (host-only so we put them in build/)
+PARSER_CPP_HOST := $(PARSER_DIR)/parser.cpp
+LEXER_CPP_HOST  := $(PARSER_DIR)/lex.cpp
+
+LEXER_HPP  := $(PARSER_DIR)/lex.hpp
+PARSER_HPP := $(PARSER_DIR)/parser.hpp
+
+PARSER_OUT  := $(PARSER_CPP_3DS) $(PARSER_CPP_HOST) $(PARSER_HPP) $(LEXER_CPP_3DS) $(LEXER_CPP_HOST) $(LEXER_HPP) \
+	$(PARSER_DIR)/location.hh $(PARSER_DIR)/position.hh $(PARSER_DIR)/parser.output $(PARSER_DIR)/stack.hh
 
 CFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.c)))
 ALL_CPP := $(foreach dir,$(SOURCES),$(call recurse,f,$(dir),*.cpp))
-CPPFILES := $(notdir $(PARSER_CPP) $(LEXER_CPP) $(filter-out \
+CPPFILES := $(notdir $(PARSER_CPP_3DS) $(LEXER_CPP_3DS) $(filter-out \
     %/lang/devel.cpp \
+	%/parser_3ds.cpp %/lex_3ds.cpp, \
     ,$(foreach dir,$(SOURCES),$(call recurse,f,$(dir),*.cpp)))) 
+
 SFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.s)))
 PICAFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.pica)))
 SHLISTFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.shlist)))
@@ -119,7 +127,7 @@ OUTPUT_DIR := $(TOPDIR)/$(OUTPUT)
 all: $(BUILD) $(OUTPUT_DIR)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
-3dsx: parser $(BUILD) $(OUTPUT_DIR)
+3dsx: parser_3ds $(BUILD) $(OUTPUT_DIR)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile $@
 
 cia: $(BUILD) $(OUTPUT_DIR)
@@ -149,6 +157,9 @@ $(OUTPUT_DIR):
 clean:
 	@echo clean ...
 	@rm -fr $(BUILD) $(OUTPUT) $(DEVEL_OBJECTS) $(PARSER_OUT)
+
+parser_3ds: $(PARSER_CPP_3DS) $(LEXER_CPP_3DS)
+parser_host: $(PARSER_CPP_HOST) $(LEXER_CPP_HOST)
 
 #---------------------------------------------------------------------------------
 else
@@ -207,14 +218,14 @@ else
 endif
 
 _3DSXFLAGS += --smdh=$(OUTPUT_FILE).smdh
-ifneq ("$(wildcard $(TOPDIR)/$(ROMFS))","")
-	_3DSXFLAGS += --romfs=$(TOPDIR)/$(ROMFS)
+ifneq ($(ROMFS),)
+	export _3DSXFLAGS += --romfs=$(APP_ROMFS)
 endif
 
 #---------------------------------------------------------------------------------
 # Main Targets
 #---------------------------------------------------------------------------------
-.PHONY: all 3dsx cia elf 3ds azahar fbi hblauncher
+.PHONY: all 3dsx cia elf 3ds azahar fbi hblauncher parser_3ds
 all: $(OUTPUT_FILE).zip $(OUTPUT_FILE).3ds $(OUTPUT_FILE).cia
 
 banner.bnr: $(BANNER_IMAGE_FILE) $(BANNER_AUDIO_FILE)
@@ -223,7 +234,7 @@ banner.bnr: $(BANNER_IMAGE_FILE) $(BANNER_AUDIO_FILE)
 icon.icn: $(TOPDIR)/$(ICON)
 	@$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_TITLE)" -p "$(APP_AUTHOR)" -i $(TOPDIR)/$(ICON) -o icon.icn > /dev/null
 
-$(OUTPUT_FILE).elf: $(OFILES)
+$(OUTPUT_FILE).elf: parser_3ds $(OFILES)
 
 $(OUTPUT_FILE).3dsx: $(OUTPUT_FILE).elf $(OUTPUT_FILE).smdh
 
@@ -305,45 +316,47 @@ endif
 # Parser (Bison) + Lexer (Flex) generation
 # ---------------------------------------------------------
 
-# Rule: generate parser (parser.tab.cpp + parser.tab.hpp)
-$(PARSER_CPP) $(PARSER_HPP): $(PARSER_FILE)
-	bison -d -v -o $(PARSER_CPP) $(PARSER_FILE)
+$(PARSER_CPP_3DS): $(PARSER_FILE)
+	bison -d -v -o $(PARSER_CPP_3DS) $(PARSER_FILE)
 
-# Rule: generate lexer (lex.yy.cpp + optional header)
-$(LEXER_CPP): $(LEXER_FILE) $(PARSER_HPP)
-	flex -o $(LEXER_CPP) $(LEXER_FILE)
-	sed -i 's/#include <FlexLexer.h>/#include "FlexLexer.h"/' $(LEXER_CPP)
+$(LEXER_CPP_3DS): $(LEXER_FILE)
+	flex --header-file=$(LEXER_HPP) -o $(LEXER_CPP_3DS) $(LEXER_FILE)
+	sed -i 's/#include <FlexLexer.h>/#include "FlexLexer.h"/' $(LEXER_CPP_3DS)
 
-# Convenience rule: rebuild both lexer & parser
-parser: $(PARSER_CPP) $(LEXER_CPP)
+$(PARSER_CPP_HOST): $(PARSER_FILE)
+	bison -d -v -o $(PARSER_CPP_HOST) $(PARSER_FILE)
+
+$(LEXER_CPP_HOST): $(LEXER_FILE)
+	flex --header-file=$(LEXER_HPP) -o $(LEXER_CPP_HOST) $(LEXER_FILE)
+	sed -i 's/#include <FlexLexer.h>/#include "FlexLexer.h"/' $(LEXER_CPP_HOST)
 
 # -----------------------------
 # Host (desktop) interpreter build
 # -----------------------------
-
-DEVEL_DIR := build
-DEVEL_BIN := $(DEVEL_DIR)/devel
-
+ifdef ENABLE_DEVEL
+# Host build: sources and objects
 DEVEL_SOURCES := \
-    $(filter-out $(PARSER_CPP) $(LEXER_CPP),$(shell find $(PWD)/$(SOURCES)/lang -type f -name '*.cpp')) \
+    $(filter-out %/parser.cpp %/lex.cpp \
+        %/parser_3ds.cpp %/lex_3ds.cpp, \
+        $(shell find $(PWD)$(SOURCES)/lang -type f -name '*.cpp') \
+    ) \
     source/Notepad3DS/source/file.cpp \
-    source/Notepad3DS/source/file_io.cpp
+    source/Notepad3DS/source/file_io.cpp \
+	$(PARSER_CPP_HOST) $(LEXER_CPP_HOST)
 
 DEVEL_OBJECTS := $(DEVEL_SOURCES:.cpp=.o)
 
 HOST_CXX := g++
 HOST_CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers
 
-.PHONY: devel
-devel: $(DEVEL_BIN)
+DEVEL_BIN := $(BUILD)/devel
 
-$(DEVEL_BIN): $(PARSER_CPP) $(LEXER_CPP) $(DEVEL_OBJECTS)
-	mkdir -p $(DEVEL_DIR)
-	$(HOST_CXX) $(HOST_CXXFLAGS) -o $@ $^
-
-# Host-only .o rule
-# (Make sure it does NOT override the 3DS one; order matters!)
-$(DEVEL_OBJECTS): | $(PARSER_CPP) $(PARSER_HPP) $(LEXER_CPP)
-
-$(DEVEL_OBJECTS): %.o: %.cpp $(PARSER_CPP)
+# Correct pattern rule — compiles ONE source per ONE object
+$(DEVEL_OBJECTS): %.o : %.cpp
 	$(HOST_CXX) $(HOST_CXXFLAGS) -c $< -o $@
+
+# Build host binary
+.PHONY: devel
+devel: $(BUILD) parser_host $(DEVEL_OBJECTS)
+	$(HOST_CXX) $(HOST_CXXFLAGS) -o $(DEVEL_BIN) $(DEVEL_OBJECTS)
+endif

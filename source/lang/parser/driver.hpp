@@ -6,7 +6,12 @@
 #include <istream>
 
 #include "scanner.hpp"
+
+#ifdef __3DS__
+#include "parser_3ds.hpp"
+#else
 #include "parser.hpp"
+#endif
 
 namespace MC{
 

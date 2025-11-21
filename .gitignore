@@ -87,3 +87,8 @@ fabric.properties
 
 # Debug files
 *.dSYM/
+
+# Parser/lexer outputs
+source/lang/parser/lex*.*pp
+source/lang/parser/parser*.*pp
+source/lang/parser/*.output

@@ -1,0 +1,28 @@
+Split parser/lexer outputs per-architecture; fix build targets and UI tweaks
+
+- Makefile:
+  - Split generated parser/lexer into arch-specific outputs: parser_3ds/lex_3ds (3DS) and parser.cpp/lex.cpp (host).
+  - Add parser_3ds and parser_host rules and make 3dsx depend on parser_3ds; ensure devel depends on parser_host.
+  - Exclude generated parser/lexer sources from auto-discovered DEVEL_SOURCES to avoid double-compilation and link conflicts.
+  - Adjust DEVEL build: only compile/link object files; create build/devel binary when ENABLE_DEVEL set.
+  - Use flex/bison invocations that emit headers; sed hack preserved to switch FlexLexer include for local header.
+  - Update devel.sh to run make devel with ENABLE_DEVEL=1.
+
+- Parser sources:
+  - Remove committed generated files (parser.cpp, lex.cpp, parser.hpp, parser.output) so generated outputs are produced at build time and not stale in tree.
+
+- Scanner / Driver:
+  - scanner.hpp and driver.hpp include now select parser_3ds.hpp when __3DS__ is defined (allow arch-specific generated headers).
+  - Ensure scanner/driver compile to use correct parser header per-arch.
+
+- Notepad3DS UI and globals:
+  - display.cpp: many formatting fixes, refactors, show_logo(), and improved print/update helpers.
+  - display.h: include globals and declare show_logo().
+  - globals.h: add LOGO_STR art constant.
+
+- Builtins:
+  - Add print_string and print_int primitives and register them.
+
+Notes:
+- Generated parser/lexer are intentionally regenerated per-target to avoid cross-architecture object interference.
+- After this change run a clean build (make clean) and ensure bison/flex are installed on host; both devel and 3dsx will regenerate appropriate parser/lexer outputs.

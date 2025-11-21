@@ -1,1 +1,1 @@
-make clean && make -j devel && ./build/devel $1
+make devel ENABLE_DEVEL=1 && ./build/devel $1

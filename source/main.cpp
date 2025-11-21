@@ -16,6 +16,12 @@ int main(int argc, char **argv) {
 
   keybaordInit();
 
+  Result rc = romfsInit();
+	if (rc)
+		printf("romfsInit: %08lX\n", rc);
+
+  show_logo();
+
   while (aptMainLoop()) {
     gspWaitForVBlank();
     // gfxFlushBuffers();

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "file.h"
+#include "../../globals.h"
 #include <3ds.h>
 #include <string>
 
@@ -33,5 +34,7 @@ void print_text(const char* str, unsigned int count, unsigned int selected_line)
 void print_instructions();
 void print_version();
 void status_message(std::string str);
+
+void show_logo(void);
 
 std::string char_vec_to_string(std::vector<char>& line);

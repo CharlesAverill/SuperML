@@ -5,7 +5,11 @@
 #include "FlexLexer.h"
 #endif
 
+#ifdef __3DS__
+#include "parser_3ds.hpp"
+#else
 #include "parser.hpp"
+#endif
 #include "location.hh"
 
 namespace MC{
