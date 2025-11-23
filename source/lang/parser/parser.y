@@ -41,14 +41,14 @@
 %token ID
 
 /* ---------- Modern C++ Types ---------- */
-%type <Term> term app_term atom
+%type <Term> term nonlet_term app_term atom
 %type <Type> type arrow_type tuple_type base_type
 
 %type <std::string> ID STRINGLIT
 %type <int> INTLIT
 %type <float> FLOATLIT
 
-%left SEMICOLON
+%right SEMICOLON
 %left EQUAL
 %nonassoc IN
 %right ARROW
@@ -57,34 +57,23 @@
 
 %%
 
-/* ===========================================================
-   PROGRAM
-   =========================================================== */
-
 program:
     term  { driver.root_term = $1; }
     ;
 
-/* ===========================================================
-   TERMS
-   =========================================================== */
-
-/* Top-level term: handles sequences */
 term:
-      LET ID COLON type EQUAL term IN term
+      nonlet_term
+    | LET ID COLON type EQUAL term IN term
         { $$ = TermNode::LetTerm($2, $4, $6, $8); }
-    | FUN ID COLON type EQUAL term
-        { $$ = TermNode::AbsTerm($2, $4, $6); }
-    | term SEMICOLON term
+    | nonlet_term SEMICOLON term
         { $$ = TermNode::LetTerm("_", TypeNode::Unit(), $1, $3); }
-    | app_term
-        { $$ = $1; }
     ;
 
-
-/* ===========================================================
-   APPLICATION CHAINS
-   =========================================================== */
+nonlet_term:
+      FUN ID COLON type EQUAL term
+        { $$ = TermNode::AbsTerm($2, $4, $6); }
+    | app_term
+        { $$ = $1; }
 
 app_term:
       app_term atom
@@ -93,11 +82,6 @@ app_term:
         }
     | atom   { $$ = $1; }
     ;
-
-
-/* ===========================================================
-   ATOMS
-   =========================================================== */
 
 atom:
       TRUE       { $$ = TermNode::Bool(true); }
@@ -116,11 +100,6 @@ atom:
     | LPAREN term RPAREN
         { $$ = $2; }   // group, now unambiguous
     ;
-
-
-/* ===========================================================
-   TYPES
-   =========================================================== */
 
 type:
       arrow_type   { $$ = $1; }
@@ -142,10 +121,6 @@ tuple_type:
     | base_type
         { $$ = $1; }
     ;
-
-/* ===========================================================
-   BASE TYPES
-   =========================================================== */
 
 base_type:
       LPAREN type RPAREN   { $$ = $2; }

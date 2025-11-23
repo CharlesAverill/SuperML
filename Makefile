@@ -120,7 +120,7 @@ export VPATH := $(foreach dir,$(SOURCES),$(CURDIR)/$(dir) $(call recurse,d,$(CUR
 export TOPDIR := $(CURDIR)
 OUTPUT_DIR := $(TOPDIR)/$(OUTPUT)
 
-.PHONY: $(BUILD) clean all
+.PHONY: $(BUILD) clean all format
 
 #---------------------------------------------------------------------------------
 # Initial Targets
@@ -154,6 +154,9 @@ $(BUILD):
 
 $(OUTPUT_DIR):
 	@[ -d $@ ] || mkdir -p $@
+
+fmt:
+	find . -regex '.*\.\(c\|cc\|cpp\|cxx\|h\|hh\|hpp\)' -exec clang-format -i {} +
 
 clean:
 	@echo clean ...

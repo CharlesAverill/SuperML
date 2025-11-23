@@ -7,10 +7,11 @@
 #endif
 
 std::string strip(std::string s) {
-    auto start = std::find_if_not(s.begin(), s.end(), ::isspace);
-    auto end   = std::find_if_not(s.rbegin(), s.rend(), ::isspace).base();
-    if (start >= end) return ""; // all spaces
-    return std::string(start, end);
+  auto start = std::find_if_not(s.begin(), s.end(), ::isspace);
+  auto end = std::find_if_not(s.rbegin(), s.rend(), ::isspace).base();
+  if (start >= end)
+    return ""; // all spaces
+  return std::string(start, end);
 }
 
 std::string char_vec_to_string(std::vector<char> &line) {

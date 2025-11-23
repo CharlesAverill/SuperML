@@ -1,11 +1,9 @@
-#include <3ds.h>
 #include "globals.h"
-#include "ui.h"
 #include "lang/interpreter.h"
+#include "ui.h"
+#include <3ds.h>
 
-void stepCallback(State state) {
-
-}
+void stepCallback(State state) {}
 
 int main(int argc, char **argv) {
   gfxInitDefault();
@@ -19,8 +17,8 @@ int main(int argc, char **argv) {
   bool logo_cleared = false;
 
   Result rc = romfsInit();
-	if (rc)
-		printf("romfsInit: %08lX\n", rc);
+  if (rc)
+    printf("romfsInit: %08lX\n", rc);
 
   while (aptMainLoop()) {
     gspWaitForVBlank();
@@ -52,4 +50,3 @@ int main(int argc, char **argv) {
   gfxExit();
   return 0;
 }
-

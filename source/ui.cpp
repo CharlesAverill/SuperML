@@ -8,6 +8,7 @@
 PrintConsole topScreen, bottomScreen;
 int scroll = 0;
 bool fast_scroll = false;
+bool unsavedChanges = false;
 std::string currentFilename;
 
 void move_down(File &file);
@@ -46,23 +47,44 @@ void newFile(void) {
   current_file_line = 0;
   scroll = 0;
   currentFilename = NEW_FN;
+  unsavedChanges = true;
   update_screen(file, current_file_line);
 }
 
-static SwkbdCallbackResult validateYesNo(void* user, const char** ppMessage, const char* text, size_t textlen)
-{
+static SwkbdCallbackResult validateYesNo(void *user, const char **ppMessage,
+                                         const char *text, size_t textlen) {
   *ppMessage = "Please enter one of \"y\", \"n\"";
 
+	if (textlen < 1)
+    return SWKBD_CALLBACK_CONTINUE;
+
   switch (text[0]) {
-    case 'y':
-    case 'Y':
-      return SWKBD_CALLBACK_OK;
-    case 'n':
-    case 'N':
-      return SWKBD_CALLBACK_CLOSE;
-    default:
-      return SWKBD_CALLBACK_CONTINUE;
+  case 'y':
+  case 'Y':
+	case 'n':
+  case 'N':
+    return SWKBD_CALLBACK_OK;
+  default:
+    return SWKBD_CALLBACK_CONTINUE;
   }
+}
+
+bool promptYesNo() {
+  static char buf[BUFFER_SIZE];
+	memset(buf, '\0', BUFFER_SIZE);
+  swkbdSetFilterCallback(&swkbd, validateYesNo, NULL);
+  swkbdInputText(&swkbd, buf, BUFFER_SIZE);
+  return buf[0] == 'y' || buf[0] == 'Y';
+}
+
+void promptSaveChanges() {
+  setupKeyboard("Save unsaved changes? (y/n)", "");
+  if (promptYesNo()) { }
+	// 	if (currentFilename == NEW_FN)
+	// 		promptSaveFile();
+  //   else
+	// 		saveFile(currentFilename);
+  // }
 }
 
 void keyboardMain(uint32_t kDown, uint32_t kHeld) {
@@ -96,8 +118,9 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
     }
 
     // Get user input, modify file
-    setupKeyboard("Line text goes here", current_text);
+    setupKeyboard("Line text", current_text);
     if (swkbdInputText(&swkbd, swkbd_buf, sizeof(swkbd_buf)) != SWKBD_BUTTON_NONE) {
+      unsavedChanges = true;
       std::vector<char> new_text = char_arr_to_vector(swkbd_buf);
 
       if (current_file_line >= file.lines.size()) {
@@ -109,7 +132,8 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
       update_screen(file, current_file_line);
     }
   } else if (kDown & KEY_B) { // Create file
-    // Confirm creating a new file
+    // if (unsavedChanges)
+		// 	promptSaveChanges();
     setupKeyboard("Open a new file? (y/n)", "");
     swkbdSetFilterCallback(&swkbd, validateYesNo, NULL);
     swkbdInputText(&swkbd, swkbd_buf, sizeof(swkbd_buf));
@@ -144,9 +168,7 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
     fast_scroll = true;
   } else if (kDown & KEY_X) { // Save file
     promptSaveFile();
-  } else if (kDown & KEY_Y) {
-    // Similar code to pressing X, see about refactoring
-    // Open a file
+  } else if (kDown & KEY_Y) { // Open a file
     current_file_line = 0;
     scroll = 0;
     // Clear buffer
@@ -255,13 +277,24 @@ void move_up(File &file) {
 bool promptSaveFile(void) {
   char filename_buf[128];
   // Get filename
-  setupKeyboard("Filename to save as", "");
+  setupKeyboard("Filename to save as", (currentFilename == NEW_FN ? "" : currentFilename).c_str());
   swkbdInputText(&swkbd, filename_buf, 128);
   std::string filename = filename_buf;
 
   // Write to file
   if (write_to_file(filename, file)) {
     currentFilename = filename_buf;
+    status_message("Wrote to " + filename);
+    return true;
+  } else {
+    status_message("Couldn't write to " + filename);
+    return false;
+  }
+}
+
+bool saveFile(std::string filename) {
+  if (write_to_file(filename, file)) {
+    currentFilename = filename;
     status_message("Wrote to " + filename);
     return true;
   } else {

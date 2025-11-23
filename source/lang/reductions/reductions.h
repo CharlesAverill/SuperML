@@ -1,15 +1,15 @@
 #ifndef REDUCTIONS
 #define REDUCTIONS
 
-#include <map>
-#include "../syntax.h"
 #include "../../globals.h"
+#include "../syntax.h"
+#include <map>
 
 typedef std::map<std::string, Term> Env;
 
 bool isValue(Term term);
 
-Term substitute(Term t, const std::string& x, Term v);
+Term substitute(Term t, const std::string &x, Term v);
 
 /*
     beta-reduction
