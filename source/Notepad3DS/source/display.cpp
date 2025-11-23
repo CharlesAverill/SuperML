@@ -120,24 +120,67 @@ void print_text(const char *str, unsigned int count,
   printf(DEFAULT_TEXT_COLOUR);
 }
 
-void update_screen(File &file, unsigned int current_line) {
+void update_screen(File &file, unsigned int current_line, const std::vector<unsigned int> &lines_to_redraw) {
     scroll = current_line > MAX_LINES ? current_line - MAX_LINES : 0;
 
     print_status(file, current_line);
+    status_message("");
 
     int start_line = scroll;
     int end_line = scroll + MAX_LINES;
     if (end_line >= (int)file.lines.size())
         end_line = file.lines.size() - 1;
 
-    clear_top_screen();
+    consoleSelect(&topScreen);
 
-    auto iter = file.lines.begin();
-    advance(iter, start_line);
+    if (lines_to_redraw.empty()) {
+        // Draw entire visible screen
+        clear_top_screen();
 
-    for (int file_idx = start_line; file_idx <= end_line; file_idx++, iter++) {
-        std::string temp = char_vec_to_string(*iter);   // keep alive
-        const char *str_to_print = temp.c_str();        // safe
-        print_text(str_to_print, file_idx - start_line, current_line - scroll);
+        auto iter = file.lines.begin();
+        std::advance(iter, start_line);
+
+        for (int file_idx = start_line; file_idx <= end_line; file_idx++, iter++) {
+            std::string line_str = char_vec_to_string(*iter);
+
+            // Move cursor to line
+            printf("\x1b[%d;0H", file_idx - start_line + 1);
+
+            // Clear line first
+            printf("\033[2K");
+
+            // Print text
+            print_text(line_str.c_str(), file_idx - start_line, current_line - scroll);
+        }
+
+        // Clear any remaining screen lines below the last line of the file
+        for (int screen_idx = end_line + 1; screen_idx <= start_line + MAX_LINES; screen_idx++) {
+            printf("\x1b[%d;0H\033[2K", screen_idx - start_line + 1);
+        }
+    } else {
+        // Only redraw specified lines
+        for (int line_idx : lines_to_redraw) {
+            if (line_idx < start_line || line_idx > start_line + MAX_LINES)
+                continue; // skip lines not visible
+
+            auto iter = file.lines.begin();
+            std::advance(iter, line_idx);
+            std::string line_str = char_vec_to_string(*iter);
+
+            // Move cursor to the correct row
+            printf("\x1b[%d;0H", line_idx - start_line + 1);
+
+            // Clear line if empty or just '\n'
+            printf("\033[2K");
+
+            // Print text
+            print_text(line_str.c_str(), line_idx - start_line, current_line - scroll);
+        }
+
+        // Additionally, clear lines beyond the current file end that were visible
+        int last_visible_line = start_line + MAX_LINES;
+        for (int line_idx = file.lines.size(); line_idx <= last_visible_line; line_idx++) {
+            printf("\x1b[%d;0H\033[2K", line_idx - start_line + 1);
+        }
     }
 }

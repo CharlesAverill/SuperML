@@ -28,7 +28,7 @@ extern std::string currentFilename;
 
 void clear_top_screen();
 void clear_bottom_screen();
-void update_screen(File& file, unsigned int current_line);
+void update_screen(File &file, unsigned int current_line, const std::vector<unsigned int> &lines_to_redraw = {});
 void print_text(const char* str, unsigned int count, unsigned int selected_line);
 
 void print_instructions();

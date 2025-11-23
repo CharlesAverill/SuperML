@@ -13,7 +13,7 @@ std::string currentFilename;
 void move_down(File &file);
 void move_up(File &file);
 
-unsigned int curr_line = 0;
+unsigned int current_file_line = 0;
 
 File file;
 static SwkbdState swkbd;
@@ -31,7 +31,7 @@ void keyboardInit(void) {
   swkbdSetValidation(&swkbd, SWKBD_ANYTHING, SWKBD_ANYTHING, 2);
   swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
 
-  update_screen(file, curr_line);
+  update_screen(file, current_file_line);
   show_logo();
 }
 
@@ -43,10 +43,10 @@ void setupKeyboard(const char* hintText, const char* initialText) {
 void newFile(void) {
   File blankFile;
   file = blankFile;
-  curr_line = 0;
+  current_file_line = 0;
   scroll = 0;
   currentFilename = NEW_FN;
-  update_screen(file, curr_line);
+  update_screen(file, current_file_line);
 }
 
 static SwkbdCallbackResult validateYesNo(void* user, const char** ppMessage, const char* text, size_t textlen)
@@ -82,10 +82,10 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
     auto line = file.lines.begin();
 
     // Get current line text
-    if (curr_line < file.lines.size()) {
-      advance(line, curr_line);
+    if (current_file_line < file.lines.size()) {
+      advance(line, current_file_line);
 
-      if (curr_line == file.lines.size() - 1) {
+      if (current_file_line == file.lines.size() - 1) {
         file.lines.push_back(std::vector<char>{'\n'});
       }
 
@@ -100,13 +100,13 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
     if (swkbdInputText(&swkbd, swkbd_buf, sizeof(swkbd_buf)) != SWKBD_BUTTON_NONE) {
       std::vector<char> new_text = char_arr_to_vector(swkbd_buf);
 
-      if (curr_line >= file.lines.size()) {
+      if (current_file_line >= file.lines.size()) {
         // Empty line, add a new one.
         file.add_line(new_text);
       } else {
-        file.edit_line(new_text, curr_line);
+        file.edit_line(new_text, current_file_line);
       }
-      update_screen(file, curr_line);
+      update_screen(file, current_file_line);
     }
   } else if (kDown & KEY_B) { // Create file
     // Confirm creating a new file
@@ -133,11 +133,11 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
     } else {
       char msg[2 * BUFFER_SIZE];
       sprintf(msg, "Found %s at L%d", swkbd_buf, line);
-      curr_line = line;
-      if (curr_line > MAX_LINES) {
-        scroll = curr_line - MAX_LINES;
+      current_file_line = line;
+      if (current_file_line > MAX_LINES) {
+        scroll = current_file_line - MAX_LINES;
       }
-      update_screen(file, curr_line);
+      update_screen(file, current_file_line);
     }
   } else if (kHeld & KEY_L) {
     // If held, allows for jumping to end and start of file
@@ -147,7 +147,7 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
   } else if (kDown & KEY_Y) {
     // Similar code to pressing X, see about refactoring
     // Open a file
-    curr_line = 0;
+    current_file_line = 0;
     scroll = 0;
     // Clear buffer
     memset(swkbd_buf, '\0', BUFFER_SIZE);
@@ -167,11 +167,11 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
       // print functions here seem to crash the program
       if (file.read_success) {
         currentFilename = filename;
-        update_screen(file, curr_line);
+        update_screen(file, current_file_line);
         status_message("Opened " + filename);
       } else {
         file = oldfile;
-        update_screen(file, curr_line);
+        update_screen(file, current_file_line);
         status_message("Failed to open " + filename);
       }
     }
@@ -188,53 +188,57 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
   if (entered_text && button != SWKBD_BUTTON_NONE) {
     std::vector<char> new_text = char_arr_to_vector(swkbd_buf);
 
-    if (curr_line >= file.lines.size()) {
+    if (current_file_line >= file.lines.size()) {
       // Empty line, add a new one.
       file.add_line(new_text);
     } else {
-      file.edit_line(new_text, curr_line);
+      file.edit_line(new_text, current_file_line);
     }
-    update_screen(file, curr_line);
+    update_screen(file, current_file_line);
   }
 }
 
 void move_down(File &file) {
   // Move a line down (towards bottom of screen)
 
+  unsigned int old_line = current_file_line;
+
   if (fast_scroll) {
-    curr_line = file.lines.size();
-    scroll = curr_line - MAX_LINES;
+    current_file_line = file.lines.size();
+    scroll = current_file_line - MAX_LINES;
   } else {
-    if ((curr_line - scroll >= MAX_LINES)) {
+    if ((current_file_line - scroll >= MAX_LINES)) {
       scroll++;
     }
-    curr_line++;
+    current_file_line++;
   }
 
   // Add new empty lines as needed
-  while (curr_line >= file.lines.size()) {
+  while (current_file_line >= file.lines.size()) {
     file.lines.push_back(std::vector<char>{'\n'});
   }
 
-  update_screen(file, curr_line);
+  update_screen(file, current_file_line, {old_line, current_file_line});
 }
 
 void move_up(File &file) {
+  unsigned int old_line = current_file_line;
+
   // Move a line up (towards top of screen)
-  if (curr_line != 0) {
+  if (current_file_line != 0) {
     if (fast_scroll) {
       // Jump to the top
-      curr_line = 0;
+      current_file_line = 0;
       scroll = 0;
     } else {
-      curr_line--;
-      if (curr_line - scroll <= 0 && scroll != 0) {
+      current_file_line--;
+      if (current_file_line - scroll <= 0 && scroll != 0) {
         scroll--;
       }
     }
 
     // Trim trailing empty lines after the current line
-    while (file.lines.size() > curr_line + 1) {
+    while (file.lines.size() > current_file_line + 1) {
       // Check if the last line is empty
       auto &lastLine = file.lines.back();
       if (lastLine.size() == 1 && lastLine[0] == '\n') {
@@ -244,7 +248,8 @@ void move_up(File &file) {
       }
     }
   }
-  update_screen(file, curr_line);
+
+  update_screen(file, current_file_line, {old_line, current_file_line});
 }
 
 bool promptSaveFile(void) {

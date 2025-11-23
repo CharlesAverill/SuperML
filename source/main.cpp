@@ -16,6 +16,8 @@ int main(int argc, char **argv) {
 
   keyboardInit();
 
+  bool logo_cleared = false;
+
   Result rc = romfsInit();
 	if (rc)
 		printf("romfsInit: %08lX\n", rc);
@@ -27,6 +29,11 @@ int main(int argc, char **argv) {
     hidScanInput();
     u32 kDown = hidKeysDown();
     u32 kHeld = hidKeysHeld();
+
+    if ((kDown | kHeld) && !logo_cleared) {
+      clear_top_screen();
+      logo_cleared = true;
+    }
 
     keyboardMain(kDown, kHeld);
     if (kDown & KEY_SELECT) {
