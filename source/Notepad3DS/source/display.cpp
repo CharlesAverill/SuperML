@@ -70,13 +70,6 @@ void print_status(File &file, int current_line) {
          file.lines.size());
 }
 
-std::string strip(std::string s) {
-    auto start = std::find_if_not(s.begin(), s.end(), ::isspace);
-    auto end   = std::find_if_not(s.rbegin(), s.rend(), ::isspace).base();
-    if (start >= end) return ""; // all spaces
-    return std::string(start, end);
-}
-
 void status_message(std::string msg) {
     clear_range(&bottomScreen, STATUS_MSG_LINE, 1, MAX_BOT_WIDTH);
 
@@ -87,24 +80,6 @@ void status_message(std::string msg) {
     printf("[ %s", strip(msg).c_str());
     for (int i = 0; i < pad; i++) putchar(' ');
     printf("]\n");
-}
-
-std::string char_vec_to_string(std::vector<char> &line) {
-
-  std::string temp_str = "";
-  int letters = 0;
-  for (const auto &ch : line) {
-    if (letters != MAX_TOP_WIDTH) {
-      // Store characters to display
-      temp_str.push_back(ch);
-      letters++;
-    } else {
-      // Too much text, display new line
-      temp_str.push_back('\n');
-      break;
-    }
-  }
-  return temp_str;
 }
 
 void print_text(const char *str, unsigned int count,
@@ -133,7 +108,13 @@ void update_screen(File &file, unsigned int current_line, const std::vector<unsi
 
     consoleSelect(&topScreen);
 
-    if (lines_to_redraw.empty()) {
+    bool force_redraw = false;
+    #ifdef __3DS__
+      // moving up with the flicker optimization kills the application, probably OOB read as file lines get clipped off
+      force_redraw = true;
+    #endif
+
+    if (lines_to_redraw.empty() || force_redraw) {
         // Draw entire visible screen
         clear_top_screen();
 
@@ -154,13 +135,13 @@ void update_screen(File &file, unsigned int current_line, const std::vector<unsi
         }
 
         // Clear any remaining screen lines below the last line of the file
-        for (int screen_idx = end_line + 1; screen_idx <= start_line + MAX_LINES; screen_idx++) {
+        for (int screen_idx = end_line + 1; screen_idx <= end_line; screen_idx++) {
             printf("\x1b[%d;0H\033[2K", screen_idx - start_line + 1);
         }
     } else {
         // Only redraw specified lines
         for (int line_idx : lines_to_redraw) {
-            if (line_idx < start_line || line_idx > start_line + MAX_LINES)
+            if (line_idx < start_line || line_idx > end_line || !(file.lines.size() <= line_idx))
                 continue; // skip lines not visible
 
             auto iter = file.lines.begin();
@@ -180,7 +161,7 @@ void update_screen(File &file, unsigned int current_line, const std::vector<unsi
         // Additionally, clear lines beyond the current file end that were visible
         int last_visible_line = start_line + MAX_LINES;
         for (int line_idx = file.lines.size(); line_idx <= last_visible_line; line_idx++) {
-            printf("\x1b[%d;0H\033[2K", line_idx - start_line + 1);
+          clear_range(&topScreen, "\x1b[" + std::to_string(line_idx - start_line + 1) + ";0H", 1, 70);
         }
     }
 }

@@ -1,6 +1,6 @@
 %skeleton "lalr1.cc"
 %require "3.0"
-// %debug
+%debug
 %defines
 %define api.namespace {MC}
 %define api.parser.class {MC_Parser}
@@ -12,6 +12,7 @@
     }
 
     #include "../syntax.h"
+    #include "../../globals.h"
 }
 
 %parse-param { MC_Scanner &scanner }
@@ -32,7 +33,7 @@
 %define parse.assert
 
 /* ---------- Token Definitions ---------- */
-%token LET IN FUN COLON SEMICOLON ARROW STAR COMMA
+%token LET IN FUN COLON SEMICOLON ARROW STAR COMMA EQUAL
 %token LPAREN RPAREN
 %token TRUE FALSE
 %token INTLIT FLOATLIT STRINGLIT
@@ -40,12 +41,17 @@
 %token ID
 
 /* ---------- Modern C++ Types ---------- */
-%type <Term> term simple_term app_term atom
+%type <Term> term app_term atom
 %type <Type> type arrow_type tuple_type base_type
 
 %type <std::string> ID STRINGLIT
 %type <int> INTLIT
 %type <float> FLOATLIT
+
+%left SEMICOLON
+%left EQUAL
+%nonassoc IN
+%right ARROW
 
 %locations
 
@@ -63,46 +69,31 @@ program:
    TERMS
    =========================================================== */
 
+/* Top-level term: handles sequences */
 term:
-      LET ID COLON type '=' term IN term
-        {
-            $$ = TermNode::LetTerm($2, $4, $6, $8);
-        }
-
-    | FUN ID COLON type ARROW term
-        {
-            $$ = TermNode::AbsTerm($2, $4, $6);
-        }
-
+      LET ID COLON type EQUAL term IN term
+        { $$ = TermNode::LetTerm($2, $4, $6, $8); }
+    | FUN ID COLON type EQUAL term
+        { $$ = TermNode::AbsTerm($2, $4, $6); }
     | term SEMICOLON term
-        {
-            // desugar: t1 ; t2  ==>  let _ : unit = t1 in t2
-            $$ = TermNode::LetTerm("_", TypeNode::Unit(), $1, $3);
-        }
-
-    | app_term   { $$ = $1; }
+        { $$ = TermNode::LetTerm("_", TypeNode::Unit(), $1, $3); }
+    | app_term
+        { $$ = $1; }
     ;
+
 
 /* ===========================================================
    APPLICATION CHAINS
    =========================================================== */
 
 app_term:
-      app_term simple_term
+      app_term atom
         {
             $$ = TermNode::AppTerm($1, $2);
         }
-    | simple_term   { $$ = $1; }
+    | atom   { $$ = $1; }
     ;
 
-/* ===========================================================
-   SIMPLE TERMS
-   =========================================================== */
-
-simple_term:
-      atom              { $$ = $1; }
-    | LPAREN term RPAREN { $$ = $2; }
-    ;
 
 /* ===========================================================
    ATOMS
@@ -114,18 +105,18 @@ atom:
     | INTLIT     { $$ = TermNode::Int($1); }
     | FLOATLIT   { $$ = TermNode::Float($1); }
     | STRINGLIT  { $$ = TermNode::String($1); }
-    | LPAREN RPAREN { $$ = TermNode::Unit(); }
+    | ID         { $$ = TermNode::VarTerm($1, 0, TypeNode::Unknown()); }
 
-    | ID
-        { 
-            $$ = TermNode::VarTerm($1, /*index*/0, TypeNode::Unknown());
-        }
+    | LPAREN RPAREN
+        { $$ = TermNode::Unit(); }
 
     | LPAREN term COMMA term RPAREN
-        {
-            $$ = TermNode::TupleTerm($2, $4);
-        }
+        { $$ = TermNode::TupleTerm($2, $4); }
+
+    | LPAREN term RPAREN
+        { $$ = $2; }   // group, now unambiguous
     ;
+
 
 /* ===========================================================
    TYPES
@@ -170,5 +161,30 @@ base_type:
 
 void MC::MC_Parser::error(const location_type &l, const std::string &msg)
 {
-    std::cerr << "Error: " << msg << " at " << l << "\n";
+    // Get the line number and column range
+    int line_no = l.begin.line;
+    int col_start = l.begin.column;
+    int col_end = l.end.column;
+
+    std::cerr << msg << ": " << driver.filename << ":" << line_no << ":" << col_start << "-" << col_end << std::endl;
+
+    if (line_no <= 0 || line_no > (int)driver.file.lines.size())
+        return; // invalid line
+
+    // Get the source line
+    auto iter = driver.file.lines.begin();
+    advance(iter, line_no - 1);
+    std::string line = char_vec_to_string(*iter);
+    line = strip(line); // remove leading/trailing whitespace
+
+    // Print line number and line contents
+    std::cerr << line_no << " | " << line << "\n";
+
+    // Print caret line
+    std::cerr << std::string(std::to_string(line_no).length() + 3, ' '); // align under content
+    for (int i = 1; i < col_start; ++i)
+        std::cerr << ' ';
+    for (int i = col_start; i < col_end; ++i)
+        std::cerr << '^';
+    std::cerr << "\n";
 }

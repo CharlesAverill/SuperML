@@ -12,37 +12,40 @@ MC::MC_Driver::~MC_Driver()
    parser = nullptr;
 }
 
-void 
-MC::MC_Driver::parse( const char * const filename )
+int 
+MC::MC_Driver::parse( const char * const filename_cstr )
 {
    /**
     * Remember, if you want to have checks in release mode
     * then this needs to be an if statement 
     */
-   assert( filename != nullptr );
-   std::ifstream in_file( filename );
+   assert( filename_cstr != nullptr );
+   std::ifstream in_file( filename_cstr );
    if( ! in_file.good() )
    {
-       exit( EXIT_FAILURE );
+       return 1;
    }
-   parse_helper( in_file );
-   return;
+
+   std::string fn = filename_cstr;
+   file = open_file(fn);
+
+   filename = filename_cstr;
+
+   return parse_helper( in_file );
 }
 
-void
+int
 MC::MC_Driver::parse( std::istream &stream )
 {
    if( ! stream.good()  && stream.eof() )
    {
-       return;
+       return 1;
    }
-   //else
-   parse_helper( stream ); 
-   return;
+   return parse_helper( stream ); 
 }
 
 
-void 
+int 
 MC::MC_Driver::parse_helper( std::istream &stream )
 {
    
@@ -70,12 +73,7 @@ MC::MC_Driver::parse_helper( std::istream &stream )
          ba.what() << "), exiting!!\n";
       exit( EXIT_FAILURE );
    }
-   const int accept( 0 );
-   if( parser->parse() != accept )
-   {
-      std::cerr << "Parse failed!!\n";
-   }
-   return;
+   return parser->parse();
 }
 
 void 

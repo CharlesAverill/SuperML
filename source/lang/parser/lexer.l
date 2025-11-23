@@ -56,10 +56,20 @@ using token = MC::MC_Parser::token;
 ";"                     { return token::SEMICOLON; }
 "*"                     { return token::STAR; }
 "->"                    { return token::ARROW; }
+"="                     { return token::EQUAL; }
 
 "let"                   { return token::LET; }
 "in"                    { return token::IN; }
 "fun"                   { return token::FUN; }
+
+"true" {return token::TRUE;}
+"false" {return token::FALSE;}
+
+"unit" {return token::UNIT;}
+"bool" {return token::BOOL;}
+"int" {return token::INT;}
+"float" {return token::FLOAT;}
+"string" {return token::STRING;}
 
 [0-9]+"."[0-9]*([eE][+-]?[0-9]+)?   {
                           BUILD_FLOAT(atof(yytext));

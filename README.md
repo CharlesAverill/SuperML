@@ -4,7 +4,9 @@
 
 An interpreter and text editor for a subset of the [Caml Programming Language](https://en.wikipedia.org/wiki/Caml) for the Nintendo 3DS.
 
-Great thanks to [Notepad3DS](https://github.com/MaeveMcT/Notepad3DS) as a jumping-off point for the text editor segment of this project.
+Great thanks to
+- [Notepad3DS](https://github.com/MaeveMcT/Notepad3DS) as a jumping-off point for the text editor segment of this project.
+- [min-caml](https://esumii.github.io/min-caml/index-e.html) as a minimal Caml implementation I've based mine on
 
 ## Progress
 

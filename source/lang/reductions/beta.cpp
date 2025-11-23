@@ -149,28 +149,34 @@ Term beta_step(Term t, Env& env) {
         case TermNode::TmLet: {
             auto &lt = std::get<TermNode::Let>(t->payload);
 
+            // First, reduce e1
+            Term e1r = beta_step(lt.e1, env);
+
             if (lt.name == "_") {
-                Term e1r = beta_step(lt.e1, env);
-                Term e2r = beta_step(lt.e2, env);
-                // let _ = e1 in e2  ==>  (fun _ -> e2) e1
-                return TermNode::AppTerm(
-                    TermNode::AbsTerm("_", lt.type, e2r),
-                    e1r
-                );
+                // Let _ = e1 in e2
+                // If e1 is fully reduced, just continue with e2
+                if (e1r == lt.e1) {
+                    return TermNode::AppTerm(
+                        TermNode::AbsTerm("_", lt.type, lt.e2),
+                        e1r
+                    );
+                } else {
+                    // e1 reduced, continue
+                    return TermNode::LetTerm("_", lt.type, e1r, lt.e2);
+                }
             }
 
-            // reduce e1
-            Term e1r = beta_step(lt.e1, env);
+            // For named bindings
             if (e1r != lt.e1)
                 return TermNode::LetTerm(lt.name, lt.type, e1r, lt.e2);
 
-            // let x = v in e2   ==>   substitute
+            // If e1 is a value (not a var or app), substitute
             if (e1r->kind != TermNode::TmVar &&
                 e1r->kind != TermNode::TmApp) {
                 return substitute(lt.e2, lt.name, e1r);
             }
 
-            // Otherwise: reduce e2 under extended environment
+            // Otherwise, reduce e2 under extended environment
             Env env2 = env;
             env2[lt.name] = e1r;
             Term e2r = beta_step(lt.e2, env2);

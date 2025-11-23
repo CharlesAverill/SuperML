@@ -7,6 +7,9 @@
 
 #include "scanner.hpp"
 
+#include "../../Notepad3DS/source/file.h"
+#include "../../Notepad3DS/source/file_io.h"
+
 #ifdef __3DS__
 #include "parser_3ds.hpp"
 #else
@@ -25,12 +28,12 @@ public:
     * parse - parse from a file
     * @param filename - valid string with input file
     */
-   void parse( const char *filename );
+   int parse( const char *filename );
    /** 
     * parse - parse from a c++ input stream
     * @param is - std::istream&, valid input stream
     */
-   void parse( std::istream &iss );
+   int parse( std::istream &iss );
 
    void add_upper();
    void add_lower();
@@ -38,14 +41,18 @@ public:
    void add_newline();
    void add_char();
 
+   File file;
+   std::string filename = "unknown file";
    Term root_term;
+
+   bool parse_ok;
 
    std::ostream& print(std::ostream &stream);
    MC::MC_Parser  *parser  = nullptr;
    MC::MC_Scanner *scanner = nullptr;
 private:
 
-   void parse_helper( std::istream &stream );
+   int parse_helper( std::istream &stream );
 
    std::size_t  chars      = 0;
    std::size_t  words      = 0;

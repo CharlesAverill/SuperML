@@ -81,7 +81,8 @@ LEXER_HPP  := $(PARSER_DIR)/lex.hpp
 PARSER_HPP := $(PARSER_DIR)/parser.hpp
 
 PARSER_OUT  := $(PARSER_CPP_3DS) $(PARSER_CPP_HOST) $(PARSER_HPP) $(LEXER_CPP_3DS) $(LEXER_CPP_HOST) $(LEXER_HPP) \
-	$(PARSER_DIR)/location.hh $(PARSER_DIR)/position.hh $(PARSER_DIR)/parser.output $(PARSER_DIR)/stack.hh
+	$(PARSER_DIR)/location.hh $(PARSER_DIR)/position.hh $(PARSER_DIR)/parser.output $(PARSER_DIR)/stack.hh \
+	$(PARSER_DIR)/parser_3ds.hpp $(PARSER_DIR)/parser_3ds.output
 
 CFILES := $(foreach dir,$(SOURCES),$(notdir $(call recurse,f,$(dir),*.c)))
 ALL_CPP := $(foreach dir,$(SOURCES),$(call recurse,f,$(dir),*.cpp))
@@ -342,6 +343,7 @@ DEVEL_SOURCES := \
     ) \
     source/Notepad3DS/source/file.cpp \
     source/Notepad3DS/source/file_io.cpp \
+	source/utils.cpp \
 	$(PARSER_CPP_HOST) $(LEXER_CPP_HOST)
 
 DEVEL_OBJECTS := $(DEVEL_SOURCES:.cpp=.o)

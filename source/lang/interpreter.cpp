@@ -93,7 +93,9 @@ void interpreterMain(std::string filename) {
 
     DO_3DS(status_message("Parsing..."));
     MC::MC_Driver driver;
-    driver.parse(filename.c_str());
+    if (driver.parse(filename.c_str())) {
+        return;
+    }
     Term prog = driver.root_term;
 
     DEBUG(std::cout << "PARSED: " << stringOfTerm(prog) << std::endl);
@@ -108,7 +110,7 @@ void interpreterMain(std::string filename) {
     State state = {.outChannel=outChannel, .env=emptyEnv};
 
     DO_3DS(status_message("Interpreting..."); clear_top_screen(););
-    DEBUG(std::cout << "START INTERPRET" << std::endl);
+    DEBUG(std::cout << "START INTERPRET\n==================" << std::endl);
 
     while(true) {
         auto result = step(prog, state);
@@ -122,5 +124,5 @@ void interpreterMain(std::string filename) {
     }
 
     DO_3DS(status_message("Done!"));
-    DEBUG(std::cout << "END INTERPRET" << std::endl);
+    DEBUG(std::cout << "\n==================\nEND INTERPRET" << std::endl);
 }
