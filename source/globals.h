@@ -8,6 +8,20 @@ extern PrintConsole topScreen, bottomScreen;
 
 const int WIN_W = 320, WIN_H = 240;
 
+#define NEW_FN "(new file)"
+
+#ifdef __DEBUG__
+#  define DEBUG(a) a
+#else
+#  define DEBUG(a)
+#endif
+
+#ifdef __3DS__
+#define DO_3DS(a) a
+#else
+#define DO_3DS(a)
+#endif
+
 #define LOGO_STR    "\n \x1b[49m         \x1b[48;2;29;29;17m \x1b[48;2;95;87;52m \x1b[48;2;118;105;64m \x1b[48;2;130;118;71m \x1b[48;2;138;126;78m \x1b[48;2;140;127;78m \x1b[48;2;131;119;73m \x1b[48;2;120;108;65m \x1b[48;2;97;87;53m \x1b[48;2;0;0;0m \x1b[49m         \x1b[m\n" \
                     " \x1b[49m       \x1b[48;2;33;28;14m \x1b[48;2;99;88;53m \x1b[48;2;223;199;116m \x1b[48;2;251;224;129m        \x1b[48;2;231;206;119m \x1b[48;2;113;101;61m \x1b[48;2;0;0;0m \x1b[49m       \x1b[m\n" \
                     " \x1b[49m     \x1b[48;2;0;0;0m \x1b[48;2;122;105;57m \x1b[48;2;218;188;102m \x1b[48;2;251;218;118m            \x1b[48;2;221;191;103m \x1b[48;2;134;116;63m \x1b[48;2;0;0;0m \x1b[49m     \x1b[m\n" \

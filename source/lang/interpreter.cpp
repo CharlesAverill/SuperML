@@ -3,172 +3,124 @@
 #include "syntax.h"
 #include <fstream>
 #include <iostream>
+#include <optional>
 
-bool isValue(Term* term) {
+bool isValue(Term term) {
     switch (term->kind) {
-        case TmApp:
+        case TermNode::TmApp:
             return false;
         default:
             return true;
     }
 }
 
-Term* substitute(Term* term, const std::string& name, Term* replacement) {
-    switch (term->kind) {
+std::optional<std::pair<Term, State>> step(const Term& program, const State& state) {
 
-        // ----------------------------
-        // Variable
-        // ----------------------------
-        case TmVar: {
-            Variable* v = term->value.varValue;
-
-            if (v->name == name) {
-                // Return a deep copy of replacement
-                return copyTerm(replacement);
-            } else {
-                return copyTerm(term);
-            }
-        }
-
-        // ----------------------------
-        // Lambda abstraction
-        // (we assume param shadowing blocks substitution)
-        // ----------------------------
-        case TmAbs: {
-            Func* f = term->value.funcValue;
-
-            // If the lambda parameter is the same name we are
-            // substituting, substitution is blocked by shadowing.
-            if (f->paramName == name) {
-                return copyTerm(term);
-            }
-
-            // Otherwise, substitute inside the body
-            Term* newBody = substitute(f->body, name, replacement);
-            return new Term(makeFunc(f->paramName, f->paramType, newBody));
-        }
-
-        // ----------------------------
-        // Application
-        // ----------------------------
-        case TmApp: {
-            Application* a = term->value.appValue;
-
-            Term* left2  = substitute(a->left,  name, replacement);
-            Term* right2 = substitute(a->right, name, replacement);
-
-            return new Term(makeApp(left2, right2, term->type));
-        }
-
-        // ----------------------------
-        // Tuple
-        // ----------------------------
-        case TmTuple: {
-            Tuple* tup = term->value.tupleValue;
-
-            Term* left2  = substitute(tup->leftValue,  name, replacement);
-            Term* right2 = substitute(tup->rightValue, name, replacement);
-
-            return new Term(makeTuple(left2, right2));
-        }
-
-        // ----------------------------
-        // Let-binding
-        // let x : T = e1 in e2
-        // ----------------------------
-        case TmLet: {
-            Let* letv = term->value.letValue;
-
-            // Substitute into e1 always
-            Term* e1_new = substitute(letv->e1, name, replacement);
-
-            // Substitute into e2 only if the binding name does not shadow
-            Term* e2_new = nullptr;
-            if (letv->name == name) {
-                e2_new = copyTerm(letv->e2);
-            } else {
-                e2_new = substitute(letv->e2, name, replacement);
-            }
-
-            return new Term(makeLet(letv->name, letv->type, e1_new, e2_new));
-        }
-
-        // ----------------------------
-        // Unit / Bool / Int / Float
-        // primitive literal values: no change
-        // ----------------------------
-        case TmUnit:
-        case TmBool:
-        case TmInt:
-        case TmFloat:
-            return copyTerm(term);
-
-        default:
-            return nullptr;
-    }
-}
-
-bool step(Term* program, State* state) {
     switch (program->kind) {
-        case TmApp: {
-            Application* app = program->value.appValue;
-            Term* fun = app->left;
-            Term* arg = app->right;
 
-            if (!isValue(fun)) {
-                if (step(fun, state)) return true;
-                return false;
-            }
+    /* ============================================================
+       APPLICATION
+       ============================================================ */
+    case TermNode::TmApp: {
+        const auto& ap  = std::get<TermNode::App>(program->payload);
+        Term fun        = ap.f;
+        Term arg        = ap.arg;
 
-            if (!isValue(arg)) {
-                if (step(arg, state)) return true;
-                return false;
-            }
+        /* ----------------------------------------
+           Step function position
+           ---------------------------------------- */
+        if (!isValue(fun)) {
+            auto r = step(fun, state);
+            if (!r) return std::nullopt;
 
-            if (fun->kind == TmVar) {
-                if (isPrimitive(fun)) {
-                    Term* result = primitives[fun->value.varValue->name](arg);
-                    freeTerm(program);
-                    *program = *result;
-                    return true;
-                }
-            } else if (fun->kind == TmAbs) {
-                Func* f = fun->value.funcValue;
-                Term* newBody = substitute(f->body, f->paramName, arg);
-                freeTerm(program);
-                *program = *newBody;
-                return true;
-            }
-
-            return false;
+            auto& [fun2, state2] = *r;
+            Term newProgram = TermNode::AppTerm(fun2, arg);
+            return std::make_optional(std::make_pair(newProgram, state2));
         }
-        default:
-            return false;
+
+        /* ----------------------------------------
+           Step argument position
+           ---------------------------------------- */
+        if (!isValue(arg)) {
+            auto r = step(arg, state);
+            if (!r) return std::nullopt;
+
+            auto& [arg2, state2] = *r;
+            Term newProgram = TermNode::AppTerm(fun, arg2);
+            return std::make_optional(std::make_pair(newProgram, state2));
+        }
+
+        /* ----------------------------------------
+           Now both fun and arg are values
+           ---------------------------------------- */
+
+        // Case 1: primitive function
+        if (fun->kind == TermNode::TmVar && isPrimitive(fun)) {
+            auto& v = std::get<TermNode::Var>(fun->payload);
+            auto prim = primitives.find(v.name);
+
+            if (prim != primitives.end()) {
+                Term newTerm = prim->second(arg);  // pure
+                return std::make_optional(std::make_pair(newTerm, state));
+            }
+        }
+
+        // Case 2: λ application:  (λx. body) arg → body[x := arg]
+        if (fun->kind == TermNode::TmAbs) {
+            const auto& abs = std::get<TermNode::Abs>(fun->payload);
+            Term newTerm = substitute(abs.body, abs.param, arg);
+            return std::make_optional(std::make_pair(newTerm, state));
+        }
+
+        return std::nullopt;
+    }
+
+    /* ============================================================
+       DEFAULT: no step
+       ============================================================ */
+    default:
+        return std::nullopt;
     }
 }
 
+#ifdef __3DS__
+  #include "../Notepad3DS/source/display.h"
+#endif
 
 void interpreterMain(std::string filename) {
+    DO_3DS(status_message("Initializing interpreter..."));
     initPrimitives();
 
+    DO_3DS(status_message("Parsing..."));
     MC::MC_Driver driver;
     driver.parse(filename.c_str());
-    Term prog = *driver.root_term;
+    Term prog = driver.root_term;
 
-    // Type str = makeStringType();
-    // Type unit = makeUnitType();
-    // Type ty = makeArrowType(&str, &unit);
-    // Term helloFunc = makeVar("print_endline", -1, ty);
-    // Term strarg = makeString("Hello, World!");
-    // Term prog = makeApp(&helloFunc, &strarg, unit);
+    DEBUG(std::cout << "PARSED: " << stringOfTerm(prog) << std::endl);
 
-    reduce(&prog);
+    DO_3DS(status_message("Reducing..."));
+    prog = reduce(prog);
+
+    DEBUG(std::cout << "REDUCED: " << stringOfTerm(prog) << std::endl);
 
     std::string outChannel;
     Env emptyEnv;
     State state = {.outChannel=outChannel, .env=emptyEnv};
 
-    while(step(&prog, &state)) {
-        stepCallback(&state);
+    DO_3DS(status_message("Interpreting..."); clear_top_screen(););
+    DEBUG(std::cout << "START INTERPRET" << std::endl);
+
+    while(true) {
+        auto result = step(prog, state);
+        if (!result)
+            break;
+        auto [nextTerm, nextState] = *result;
+        prog = nextTerm;
+        state = nextState;
+
+        stepCallback(state);
     }
+
+    DO_3DS(status_message("Done!"));
+    DEBUG(std::cout << "END INTERPRET" << std::endl);
 }

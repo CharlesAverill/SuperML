@@ -5,6 +5,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <string>
+#include <algorithm>
+#include <cctype>
 
 void clear_range(PrintConsole *screen, std::string start_point, int clear_lines,
                  int clear_width) {
@@ -58,7 +60,6 @@ void print_instructions() {
          "(R): Search\n"
          "(L + DPad): Jump to top/bottom\n"
          "(DPad): Change selected line\n"
-         "(START): Exit to Home Menu\n"
          "(SELECT): Interpret and Run\n");
 }
 
@@ -69,9 +70,23 @@ void print_status(File &file, int current_line) {
          file.lines.size());
 }
 
+std::string strip(std::string s) {
+    auto start = std::find_if_not(s.begin(), s.end(), ::isspace);
+    auto end   = std::find_if_not(s.rbegin(), s.rend(), ::isspace).base();
+    if (start >= end) return ""; // all spaces
+    return std::string(start, end);
+}
+
 void status_message(std::string msg) {
-  clear_range(&bottomScreen, STATUS_MSG_LINE, 1, MAX_BOT_WIDTH);
-  printf("%s\n", msg.c_str());
+    clear_range(&bottomScreen, STATUS_MSG_LINE, 1, MAX_BOT_WIDTH);
+
+    // Compute number of spaces to fill
+    int pad = MAX_BOT_WIDTH - 2 - msg.size() - 1; // -2 for '[' and ']'
+    if (pad < 0) pad = 0;
+
+    printf("[ %s", strip(msg).c_str());
+    for (int i = 0; i < pad; i++) putchar(' ');
+    printf("]\n");
 }
 
 std::string char_vec_to_string(std::vector<char> &line) {
@@ -94,72 +109,35 @@ std::string char_vec_to_string(std::vector<char> &line) {
 
 void print_text(const char *str, unsigned int count,
                 unsigned int selected_line) {
-
   if (count == selected_line)
-    if (str[0] == '\n') {
-      printf(SELECTED_TEXT_COLOUR);
-      printf("(empty line)");
-      printf(DEFAULT_TEXT_COLOUR);
-      printf("\n");
-    } else {
-      printf(SELECTED_TEXT_COLOUR);
-      printf("%s", str);
-      printf(DEFAULT_TEXT_COLOUR);
-    }
-  else {
-    printf(DEFAULT_TEXT_COLOUR);
+    printf(SELECTED_TEXT_COLOUR);
+
+  if (str[0] == '\n' && count == selected_line)
+    printf("(empty line)\n");
+  else
     printf("%s", str);
-  }
+
+  printf(DEFAULT_TEXT_COLOUR);
 }
 
 void update_screen(File &file, unsigned int current_line) {
-  clear_top_screen();
-  print_status(file, current_line);
-  consoleSelect(&topScreen);
-  unsigned int count = 0;
+    scroll = current_line > MAX_LINES ? current_line - MAX_LINES : 0;
 
-  // No scrolling needed
-  if (file.lines.size() - 1 <= MAX_LINES) {
-    for (auto iter = file.lines.begin(); iter != file.lines.end(); iter++) {
-      // Print everything in the vector<char> that iterator points to
-      std::string temp = char_vec_to_string(*iter);
-      const char *str_to_print = temp.c_str();
-      print_text(str_to_print, count, current_line);
-      count++;
-    }
+    print_status(file, current_line);
 
-    // Scrolling needed
-  } else {
+    int start_line = scroll;
+    int end_line = scroll + MAX_LINES;
+    if (end_line >= (int)file.lines.size())
+        end_line = file.lines.size() - 1;
+
+    clear_top_screen();
 
     auto iter = file.lines.begin();
+    advance(iter, start_line);
 
-    if (current_line > 1) {
-      advance(iter, (current_line - 1));
-    } else {
-      advance(iter, current_line);
+    for (int file_idx = start_line; file_idx <= end_line; file_idx++, iter++) {
+        std::string temp = char_vec_to_string(*iter);   // keep alive
+        const char *str_to_print = temp.c_str();        // safe
+        print_text(str_to_print, file_idx - start_line, current_line - scroll);
     }
-
-    if (scroll == 0) {
-      for (int line = 0; line <= MAX_LINES; line++) {
-        iter = file.lines.begin();
-        advance(iter, line);
-
-        std::string temp = char_vec_to_string(*iter);
-        const char *str_to_print = temp.c_str();
-        print_text(str_to_print, count, current_line);
-        count++;
-      }
-
-    } else {
-      for (int line = scroll; line <= MAX_LINES + scroll; line++) {
-
-        iter = file.lines.begin();
-        advance(iter, line);
-        std::string temp = char_vec_to_string(*iter);
-        const char *str_to_print = temp.c_str();
-        print_text(str_to_print, count, current_line - scroll);
-        count++;
-      }
-    }
-  }
 }

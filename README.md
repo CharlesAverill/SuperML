@@ -10,10 +10,13 @@ Great thanks to [Notepad3DS](https://github.com/MaeveMcT/Notepad3DS) as a jumpin
 
 So far, we have:
 
-- Rudimentary builtin functions for IO
+- Rudimentary builtin functions for output
 - Rudimentary text editing
 - A WIP parser using Flex/Bison
-- Execution (crash-prone on real hardware)
+- Execution
+- Development interpreter target for host system
+
+See [examples](examples) for some scripts to run
 
 ## Compiling
 

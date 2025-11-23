@@ -1,92 +1,110 @@
 #include "reductions.h"
 
-// Helper function: insert a let binding at the deepest point
-// This recursively finds nested Let/LetRec/LetTuple and goes to the bottom
-Term* insert(const std::string& name, Type type, Term* body, Term* continuation) {
+inline const TermNode::Let& asLet(const Term& t) {
+    return std::get<TermNode::Let>(t->payload);
+}
+
+inline const TermNode::Tuple& asTuple(const Term& t) {
+    return std::get<TermNode::Tuple>(t->payload);
+}
+
+inline const TermNode::Abs& asAbs(const Term& t) {
+    return std::get<TermNode::Abs>(t->payload);
+}
+
+inline const TermNode::App& asApp(const Term& t) {
+    return std::get<TermNode::App>(t->payload);
+}
+
+Term insert(const std::string& name, Type type, Term body, Term continuation) {
     switch (body->kind) {
-        case TmLet: {
-            // If body is a Let, recurse deeper
-            Let* innerLet = body->value.letValue;
-            Term* newE2 = insert(name, type, innerLet->e2, continuation);
-            
-            // Rebuild the Let with the inserted continuation
-            Term* result = new Term();
-            result->kind = TmLet;
-            result->type = body->type;
-            
-            Let* newLet = new Let();
-            newLet->name = innerLet->name;
-            newLet->type = innerLet->type;
-            newLet->e1 = innerLet->e1;
-            newLet->e2 = newE2;
-            result->value.letValue = newLet;
-            
-            return result;
-        }
 
-        default: {
-            // Base case: body is not a Let/LetRec/LetTuple
-            // Create a new Let with this body and the continuation
-            Term* result = new Term();
-            result->kind = TmLet;
-            
-            Let* newLet = new Let();
-            newLet->name = name;
-            newLet->type = type;
-            newLet->e1 = body;
-            assoc(continuation);
-            freeTerm(newLet->e2);
-            *newLet->e2 = *continuation;
-            result->value.letValue = newLet;
-            
-            // Set the type (would need proper type inference here)
-            result->type = continuation->type;
-            
-            return result;
-        }
+    case TermNode::TmLet: {
+        const auto& inner = asLet(body);
+        Term newE2 = insert(name, type, inner.e2, continuation);
+
+        return TermNode::LetTerm(
+            inner.name,
+            inner.type,
+            inner.e1,
+            newE2
+        );
+    }
+
+    default:
+        // Base case: body is not a let — create `let name = body in continuation`
+        return TermNode::LetTerm(
+            name,
+            type,
+            body,
+            continuation
+        );
     }
 }
 
-void assoc(Term* term) {    
+Term assoc(Term term) {
     switch (term->kind) {
-        case TmUnit:
-        case TmBool:
-        case TmInt:
-        case TmFloat:
-        case TmVar:
-            break;
-        
-        case TmLet: {
-            Let* let = term->value.letValue;
-            assoc(let->e1);
-            Term* newTerm = insert(let->name, let->type, let->e1, let->e2);
-            freeTerm(term);
-            *term = *newTerm;
-            delete newTerm;
-            break;
-        }
-        
-        case TmTuple: {
-            Tuple* tuple = term->value.tupleValue;
-            assoc(tuple->leftValue);
-            assoc(tuple->rightValue);
-            break;
-        }
-        
-        case TmAbs: {
-            Func* func = term->value.funcValue;            
-            assoc(func->body);
-            break;
-        }
-        
-        case TmApp: {
-            Application* app = term->value.appValue;
-            assoc(app->left);
-            assoc(app->right);
-            break;
-        }
-        
-        default:
-            return;
+
+    // -------------------------
+    // Values stay unchanged
+    // -------------------------
+    case TermNode::TmUnit:
+    case TermNode::TmBool:
+    case TermNode::TmInt:
+    case TermNode::TmFloat:
+    case TermNode::TmString:
+    case TermNode::TmVar:
+        return term;
+
+    // -------------------------
+    // Tuple
+    // -------------------------
+    case TermNode::TmTuple: {
+        const auto& tup = asTuple(term);
+        return TermNode::TupleTerm(
+            assoc(tup.left),
+            assoc(tup.right)
+        );
+    }
+
+    // -------------------------
+    // Abstraction
+    // -------------------------
+    case TermNode::TmAbs: {
+        const auto& abs = asAbs(term);
+        return TermNode::AbsTerm(
+            abs.param,
+            abs.paramType,
+            assoc(abs.body)
+        );
+    }
+
+    // -------------------------
+    // Application
+    // -------------------------
+    case TermNode::TmApp: {
+        const auto& app = asApp(term);
+        return TermNode::AppTerm(
+            assoc(app.f),
+            assoc(app.arg)
+        );
+    }
+
+    // -------------------------
+    // Let
+    // -------------------------
+    case TermNode::TmLet: {
+        const auto& let = asLet(term);
+
+        Term e1p = assoc(let.e1);
+        Term e2p = assoc(let.e2);
+
+        // Insert deeply nested lets
+        return insert(let.name, let.type, e1p, e2p);
+    }
+
+    default:
+        throw std::runtime_error("assoc: unknown term kind");
     }
 }
+

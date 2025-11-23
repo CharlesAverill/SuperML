@@ -53,6 +53,7 @@ using token = MC::MC_Parser::token;
 ")"                     { return token::RPAREN; }
 ","                     { return token::COMMA; }
 ":"                     { return token::COLON; }
+";"                     { return token::SEMICOLON; }
 "*"                     { return token::STAR; }
 "->"                    { return token::ARROW; }
 

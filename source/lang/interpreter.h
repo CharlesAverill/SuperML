@@ -4,6 +4,7 @@
 #include "reductions/reductions.h"
 #include "../Notepad3DS/source/file.h"
 #include "stdlib/stdlib.h"
+#include "../globals.h"
 
 struct State {
     std::string outChannel;
@@ -15,7 +16,7 @@ enum ReturnCode {
     OutOfFuel
 };
 
-void stepCallback(State* state);
+void stepCallback(State state);
 void interpreterMain(std::string filename);
 
 #endif /* INTERPRETER */

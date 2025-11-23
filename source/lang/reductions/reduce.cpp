@@ -1,18 +1,19 @@
+#include "../syntax.h"
 #include "reductions.h"
 
-bool step(Term* term) {
-    Term old = *term;
-
-    beta(term);
-    assoc(term);
-
-    return termsEqual(&old, term);
+Term step(Term term) {
+    return assoc(beta(term));
 }
 
-void reduce(Term* program) {
-    unsigned long long int fuel = __UINT16_MAX__;
-
-    while (fuel && step(program)) {
-        fuel--;
+Term reduce(Term program) {
+    Term out = program;
+    DEBUG(std::cout << "START REDUCE" << std::endl);
+    for(unsigned long long int fuel = __UINT16_MAX__; 0 < fuel; fuel--) {
+        Term temp = step(out);
+        if (termsEqual(temp, out))
+            break;
+        out = temp;
     }
+    DEBUG(std::cout << "END REDUCE" << std::endl);
+    return out;
 }

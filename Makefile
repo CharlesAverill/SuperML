@@ -46,7 +46,7 @@ ARCH := -march=armv6k -mtune=mpcore -mfloat-abi=hard
 COMMON_FLAGS := -g -Wall -Wno-strict-aliasing -O3 -mword-relocations -fomit-frame-pointer \
 	-ffast-math $(ARCH) $(INCLUDE) -D__3DS__ $(BUILD_FLAGS)
 CFLAGS := $(COMMON_FLAGS) -std=gnu99
-CXXFLAGS := $(COMMON_FLAGS) -std=gnu++11
+CXXFLAGS := $(COMMON_FLAGS) -std=gnu++17
 # CXXFLAGS += -fno-rtti -fno-exceptions
 
 ASFLAGS := -g $(ARCH)
@@ -347,7 +347,7 @@ DEVEL_SOURCES := \
 DEVEL_OBJECTS := $(DEVEL_SOURCES:.cpp=.o)
 
 HOST_CXX := g++
-HOST_CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers
+HOST_CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -D__DEBUG__
 
 DEVEL_BIN := $(BUILD)/devel
 

@@ -4,7 +4,7 @@
 #include "../Notepad3DS/source/file_io.h"
 #include "interpreter.h"
 
-void stepCallback(State* state) {
+void stepCallback(State state) {
 
 }
 

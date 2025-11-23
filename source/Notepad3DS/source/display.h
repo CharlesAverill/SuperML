@@ -13,8 +13,8 @@
 #define MAX_BOT_WIDTH 40
 #define SCREEN_START_POINT "\x1b[0;0H"
 #define INSTRUCTIONS_LINE "\x1b[1;0H"
-#define STATUS_LINE "\x1b[12;0H"
-#define STATUS_LINENO 12
+#define STATUS_LINE "\x1b[11;0H"
+#define STATUS_LINENO 11
 #define STATUS_LINES 3
 #define STATUS_MSG_LINE "\x1b[14;0H"
 #define VERSION_LINE "\x1b[28;0H"

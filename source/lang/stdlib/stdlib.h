@@ -5,12 +5,12 @@
 #include <string>
 #include "../syntax.h"
 
-using PrimitiveImpl = Term*(*)(Term* arg);
+using PrimitiveImpl = Term(*)(Term arg);
 
 extern std::map<std::string, PrimitiveImpl> primitives;
 
 void initPrimitives();
 
-bool isPrimitive(Term* tm);
+bool isPrimitive(Term tm);
 
 #endif

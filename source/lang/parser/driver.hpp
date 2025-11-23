@@ -38,7 +38,7 @@ public:
    void add_newline();
    void add_char();
 
-   Term* root_term;
+   Term root_term;
 
    std::ostream& print(std::ostream &stream);
    MC::MC_Parser  *parser  = nullptr;

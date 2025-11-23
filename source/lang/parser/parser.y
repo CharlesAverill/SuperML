@@ -1,174 +1,174 @@
 %skeleton "lalr1.cc"
-%require  "3.0"
-%debug 
-%defines 
+%require "3.0"
+// %debug
+%defines
 %define api.namespace {MC}
 %define api.parser.class {MC_Parser}
 
-%code requires{
-   namespace MC {
-      class MC_Driver;
-      class MC_Scanner;
-   }
+%code requires {
+    namespace MC {
+        class MC_Driver;
+        class MC_Scanner;
+    }
 
-   #include "../syntax.h"
-
-// The following definitions is missing when %locations isn't used
-# ifndef YY_NULLPTR
-#  if defined __cplusplus && 201103L <= __cplusplus
-#   define YY_NULLPTR nullptr
-#  else
-#   define YY_NULLPTR 0
-#  endif
-# endif
-
+    #include "../syntax.h"
 }
 
-%parse-param { MC_Scanner  &scanner  }
-%parse-param { MC_Driver  &driver  }
+%parse-param { MC_Scanner &scanner }
+%parse-param { MC_Driver &driver }
 
-%code{
-   #include <iostream>
-   #include <cstdlib>
-   #include <fstream>
-   
-   /* include for all driver functions */
-   #include "driver.hpp"
+%code {
+    #include <iostream>
+    #include <cstdlib>
+    #include <fstream>
 
-#undef yylex
-#define yylex scanner.yylex
+    #include "driver.hpp"
+
+    #undef yylex
+    #define yylex scanner.yylex
 }
 
 %define api.value.type variant
 %define parse.assert
 
-%token LET
-%token IN
-%token FUN
-%token COLON
-%token ARROW
-%token STAR
-%token COMMA
-%token LPAREN
-%token RPAREN
-%token TRUE
-%token FALSE
-%token INTLIT
-%token FLOATLIT
-%token STRINGLIT
-%token UNIT
-%token BOOL
-%token INT
-%token FLOAT
-%token STRING
+/* ---------- Token Definitions ---------- */
+%token LET IN FUN COLON SEMICOLON ARROW STAR COMMA
+%token LPAREN RPAREN
+%token TRUE FALSE
+%token INTLIT FLOATLIT STRINGLIT
+%token UNIT BOOL INT FLOAT STRING
 %token ID
 
-%type <Term*> term simple_term app_term atom
-%type <Type*> type arrow_type tuple_type base_type
-%type <std::string> ID
+/* ---------- Modern C++ Types ---------- */
+%type <Term> term simple_term app_term atom
+%type <Type> type arrow_type tuple_type base_type
+
+%type <std::string> ID STRINGLIT
 %type <int> INTLIT
 %type <float> FLOATLIT
-%type <std::string> STRINGLIT
 
 %locations
 
 %%
 
+/* ===========================================================
+   PROGRAM
+   =========================================================== */
+
 program:
-    term { driver.root_term = $1; }
+    term  { driver.root_term = $1; }
+    ;
+
+/* ===========================================================
+   TERMS
+   =========================================================== */
 
 term:
       LET ID COLON type '=' term IN term
         {
-            $$ = new Term(makeLet($2, *$4, $6, $8));
+            $$ = TermNode::LetTerm($2, $4, $6, $8);
         }
+
     | FUN ID COLON type ARROW term
         {
-            $$ = new Term(makeFunc($2, *$4, $6));
+            $$ = TermNode::AbsTerm($2, $4, $6);
         }
-    | app_term
-        { $$ = $1; }
+
+    | term SEMICOLON term
+        {
+            // desugar: t1 ; t2  ==>  let _ : unit = t1 in t2
+            $$ = TermNode::LetTerm("_", TypeNode::Unit(), $1, $3);
+        }
+
+    | app_term   { $$ = $1; }
     ;
+
+/* ===========================================================
+   APPLICATION CHAINS
+   =========================================================== */
 
 app_term:
       app_term simple_term
         {
-            Type t = makeUnknownType();
-            $$ = new Term(makeApp($1, $2, t));
+            $$ = TermNode::AppTerm($1, $2);
         }
-    | simple_term
-        { $$ = $1; }
+    | simple_term   { $$ = $1; }
     ;
+
+/* ===========================================================
+   SIMPLE TERMS
+   =========================================================== */
 
 simple_term:
-      atom
-        { $$ = $1; }
-    | LPAREN term RPAREN
-        { $$ = $2; }
+      atom              { $$ = $1; }
+    | LPAREN term RPAREN { $$ = $2; }
     ;
+
+/* ===========================================================
+   ATOMS
+   =========================================================== */
 
 atom:
-      TRUE
-        { $$ = new Term(makeBool(true)); }
-    | FALSE
-        { $$ = new Term(makeBool(false)); }
-    | INTLIT
-        { $$ = new Term(makeInt($1)); }
-    | FLOATLIT
-        { $$ = new Term(makeFloat($1)); }
-    | STRINGLIT
-        { $$ = new Term(makeString($1)); }
-    | LPAREN RPAREN
-        { $$ = new Term(makeUnit()); }
+      TRUE       { $$ = TermNode::Bool(true); }
+    | FALSE      { $$ = TermNode::Bool(false); }
+    | INTLIT     { $$ = TermNode::Int($1); }
+    | FLOATLIT   { $$ = TermNode::Float($1); }
+    | STRINGLIT  { $$ = TermNode::String($1); }
+    | LPAREN RPAREN { $$ = TermNode::Unit(); }
+
     | ID
-        {
-            Type t = makeUnknownType();
-            $$ = new Term(makeVar($1, /*index*/0, t));
+        { 
+            $$ = TermNode::VarTerm($1, /*index*/0, TypeNode::Unknown());
         }
+
     | LPAREN term COMMA term RPAREN
         {
-            $$ = new Term(makeTuple($2,$4));
+            $$ = TermNode::TupleTerm($2, $4);
         }
     ;
 
+/* ===========================================================
+   TYPES
+   =========================================================== */
+
 type:
-      arrow_type
-        { $$ = $1; }
+      arrow_type   { $$ = $1; }
     ;
 
 arrow_type:
       tuple_type ARROW arrow_type
-        { $$ = new Type(makeArrowType($1,$3)); }
+        { $$ = TypeNode::ArrowType($1, $3); }
+
     | tuple_type
         { $$ = $1; }
     ;
 
+
 tuple_type:
       tuple_type STAR base_type
-        { $$ = new Type(makeTupleType($1,$3)); }
+        { $$ = TypeNode::TupleType($1, $3); }
+
     | base_type
         { $$ = $1; }
     ;
 
+/* ===========================================================
+   BASE TYPES
+   =========================================================== */
+
 base_type:
-      LPAREN type RPAREN
-        { $$ = $2; }
-    | UNIT
-        { $$ = new Type(makeUnitType()); }
-    | BOOL
-        { $$ = new Type(makeBoolType()); }
-    | INT
-        { $$ = new Type(makeIntType()); }
-    | FLOAT
-        { $$ = new Type(makeFloatType()); }
-    | STRING
-        { $$ = new Type(makeStringType()); }
+      LPAREN type RPAREN   { $$ = $2; }
+
+    | UNIT   { $$ = TypeNode::Unit(); }
+    | BOOL   { $$ = TypeNode::Bool(); }
+    | INT    { $$ = TypeNode::Int(); }
+    | FLOAT  { $$ = TypeNode::Float(); }
+    | STRING { $$ = TypeNode::String(); }
     ;
 
 %%
 
-void 
-MC::MC_Parser::error( const location_type &l, const std::string &err_message )
+void MC::MC_Parser::error(const location_type &l, const std::string &msg)
 {
-   std::cerr << "Error: " << err_message << " at " << l << "\n";
+    std::cerr << "Error: " << msg << " at " << l << "\n";
 }
