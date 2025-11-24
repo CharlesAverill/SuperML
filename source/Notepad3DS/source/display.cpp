@@ -1,6 +1,6 @@
 #include "display.h"
-#include "file_io.h"
 #include "../../version.h"
+#include "file_io.h"
 #include <algorithm>
 #include <cctype>
 #include <iostream>
@@ -47,7 +47,7 @@ void print_centered_header(std::string text, char padding) {
 void print_version() {
   consoleSelect(&bottomScreen);
   printf(VERSION_LINE);
-  print_centered_header(APP_TITLE + (std::string)" " + APP_VERSION, ' ');
+  print_centered_header(APP_TITLE + (std::string) " " + APP_VERSION, ' ');
 }
 
 void print_instructions() {
@@ -61,7 +61,7 @@ void print_instructions() {
          "(R): Search\n"
          "(L + DPad): Jump to top/bottom\n"
          "(DPad): Change selected line\n"
-         "(SELECT): Interpret and Run\n");
+         "(SELECT): Parse and Run\n");
 }
 
 void print_status(File &file, int current_line) {
@@ -126,7 +126,8 @@ void update_screen(File &file, unsigned int current_line,
     auto iter = file.lines.begin();
     std::advance(iter, start_line);
 
-    for (unsigned int file_idx = start_line; file_idx <= end_line; file_idx++, iter++) {
+    for (unsigned int file_idx = start_line; file_idx <= end_line;
+         file_idx++, iter++) {
       std::string line_str = char_vec_to_string(*iter);
 
       // Move cursor to line
@@ -141,7 +142,8 @@ void update_screen(File &file, unsigned int current_line,
     }
 
     // Clear any remaining screen lines below the last line of the file
-    for (unsigned int screen_idx = end_line + 1; screen_idx <= end_line; screen_idx++) {
+    for (unsigned int screen_idx = end_line + 1; screen_idx <= end_line;
+         screen_idx++) {
       printf("\x1b[%d;0H\033[2K", screen_idx - start_line + 1);
     }
   } else {

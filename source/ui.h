@@ -10,10 +10,17 @@
 #include <stdio.h>
 #include <string.h>
 
+extern SwkbdState swkbd;
+
 void keyboardInit(void);
 void keyboardMain(uint32_t kDown, uint32_t kHeld);
 
 bool promptSaveFile(void);
 bool saveFile(std::string filename);
+
+void setupKeyboard(const char *hintText, const char *initialText);
+void normalKeyboardInit(void);
+void intKeyboardInit(void);
+void floatKeyboardInit(void);
 
 #endif /* KEYBOARD */

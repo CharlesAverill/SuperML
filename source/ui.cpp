@@ -17,7 +17,69 @@ void move_up(File &file);
 unsigned int current_file_line = 0;
 
 File file;
-static SwkbdState swkbd;
+SwkbdState swkbd;
+
+void normalKeyboardInit(void) {
+  swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 1, -1);
+  swkbdSetValidation(&swkbd, SWKBD_ANYTHING, 0, 2);
+  swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
+}
+
+void intKeyboardInit(void) {
+  swkbdInit(&swkbd, SWKBD_TYPE_NUMPAD, 1, -1);
+  swkbdSetValidation(&swkbd, SWKBD_NOTEMPTY_NOTBLANK, 0, 2);
+  swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
+}
+
+static SwkbdCallbackResult validateFloat(void *user, const char **ppMessage,
+                                         const char *text, size_t textlen) {
+  *ppMessage = "Please enter a valid floating-point number";
+
+  if (textlen == 0)
+    return SWKBD_CALLBACK_CONTINUE;
+
+  bool seenDigit = false;
+  bool seenDot = false;
+
+  for (size_t i = 0; i < textlen; i++) {
+    char c = text[i];
+
+    if (i == 0 && (c == '+' || c == '-')) {
+      // leading sign is OK
+      continue;
+    }
+
+    if (c >= '0' && c <= '9') {
+      seenDigit = true;
+      continue;
+    }
+
+    if (c == '.') {
+      if (seenDot) {
+        // second dot → reject
+        return SWKBD_CALLBACK_CONTINUE;
+      }
+      seenDot = true;
+      continue;
+    }
+
+    // Any other character is invalid
+    return SWKBD_CALLBACK_CONTINUE;
+  }
+
+  // Must contain at least one digit
+  if (!seenDigit)
+    return SWKBD_CALLBACK_CONTINUE;
+
+  return SWKBD_CALLBACK_OK;
+}
+
+void floatKeyboardInit(void) {
+  swkbdInit(&swkbd, SWKBD_TYPE_QWERTY, 1, -1);
+  swkbdSetValidation(&swkbd, SWKBD_NOTEMPTY_NOTBLANK, 0, 2);
+  swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
+  swkbdSetFilterCallback(&swkbd, validateFloat, NULL);
+}
 
 void keyboardInit(void) {
   consoleSelect(&bottomScreen);
@@ -28,15 +90,13 @@ void keyboardInit(void) {
 
   currentFilename = NEW_FN;
 
-  swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 1, -1);
-  swkbdSetValidation(&swkbd, SWKBD_ANYTHING, SWKBD_ANYTHING, 2);
-  swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
+  normalKeyboardInit();
 
   update_screen(file, current_file_line);
   show_logo();
 }
 
-void setupKeyboard(const char* hintText, const char* initialText) {
+void setupKeyboard(const char *hintText, const char *initialText) {
   swkbdSetHintText(&swkbd, hintText);
   swkbdSetInitialText(&swkbd, initialText);
 }
@@ -55,13 +115,13 @@ static SwkbdCallbackResult validateYesNo(void *user, const char **ppMessage,
                                          const char *text, size_t textlen) {
   *ppMessage = "Please enter one of \"y\", \"n\"";
 
-	if (textlen < 1)
+  if (textlen < 1)
     return SWKBD_CALLBACK_CONTINUE;
 
   switch (text[0]) {
   case 'y':
   case 'Y':
-	case 'n':
+  case 'n':
   case 'N':
     return SWKBD_CALLBACK_OK;
   default:
@@ -71,7 +131,7 @@ static SwkbdCallbackResult validateYesNo(void *user, const char **ppMessage,
 
 bool promptYesNo() {
   static char buf[BUFFER_SIZE];
-	memset(buf, '\0', BUFFER_SIZE);
+  memset(buf, '\0', BUFFER_SIZE);
   swkbdSetFilterCallback(&swkbd, validateYesNo, NULL);
   swkbdInputText(&swkbd, buf, BUFFER_SIZE);
   return buf[0] == 'y' || buf[0] == 'Y';
@@ -79,11 +139,12 @@ bool promptYesNo() {
 
 void promptSaveChanges() {
   setupKeyboard("Save unsaved changes? (y/n)", "");
-  if (promptYesNo()) { }
-	// 	if (currentFilename == NEW_FN)
-	// 		promptSaveFile();
+  if (promptYesNo()) {
+  }
+  // 	if (currentFilename == NEW_FN)
+  // 		promptSaveFile();
   //   else
-	// 		saveFile(currentFilename);
+  // 		saveFile(currentFilename);
   // }
 }
 
@@ -119,7 +180,8 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
 
     // Get user input, modify file
     setupKeyboard("Line text", current_text);
-    if (swkbdInputText(&swkbd, swkbd_buf, sizeof(swkbd_buf)) != SWKBD_BUTTON_NONE) {
+    if (swkbdInputText(&swkbd, swkbd_buf, sizeof(swkbd_buf)) !=
+        SWKBD_BUTTON_NONE) {
       unsavedChanges = true;
       std::vector<char> new_text = char_arr_to_vector(swkbd_buf);
 
@@ -133,7 +195,7 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
     }
   } else if (kDown & KEY_B) { // Create file
     // if (unsavedChanges)
-		// 	promptSaveChanges();
+    // 	promptSaveChanges();
     setupKeyboard("Open a new file? (y/n)", "");
     swkbdSetFilterCallback(&swkbd, validateYesNo, NULL);
     swkbdInputText(&swkbd, swkbd_buf, sizeof(swkbd_buf));
@@ -142,7 +204,8 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
     if (swkbd_buf[0] == 'y') {
       newFile();
       status_message("New file created");
-    } else status_message("Couldn't create new file");
+    } else
+      status_message("Couldn't create new file");
   } else if (kDown & KEY_R) { // Select line with search text
     // Get term to search for
     setupKeyboard("Search term", "");
@@ -277,7 +340,8 @@ void move_up(File &file) {
 bool promptSaveFile(void) {
   char filename_buf[128];
   // Get filename
-  setupKeyboard("Filename to save as", (currentFilename == NEW_FN ? "" : currentFilename).c_str());
+  setupKeyboard("Filename to save as",
+                (currentFilename == NEW_FN ? "" : currentFilename).c_str());
   swkbdInputText(&swkbd, filename_buf, 128);
   std::string filename = filename_buf;
 

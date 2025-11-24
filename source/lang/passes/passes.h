@@ -2,12 +2,12 @@
 #define REDUCTIONS
 
 #include "../../globals.h"
-#include "../syntax.h"
 #include "../stdlib/stdlib.h"
-#include <unordered_map>
-#include <stdexcept>
-#include <sstream>
+#include "../syntax.h"
 #include <functional>
+#include <sstream>
+#include <stdexcept>
+#include <unordered_map>
 
 typedef std::unordered_map<std::string, Term> Env;
 
@@ -35,12 +35,12 @@ Term reduce(Term term);
 
 // Errors
 struct TypeError : public std::runtime_error {
-    TypeError(const std::string &msg) : std::runtime_error(msg) {}
+  TypeError(const std::string &msg) : std::runtime_error(msg) {}
 };
 
 // Substitution mapping: maps unknown-TypeNode pointer -> Type
 // (we key by pointer identity of TypeNode representing unknown type variables)
-using Subst = std::unordered_map<const TypeNode*, Type>;
+using Subst = std::unordered_map<const TypeNode *, Type>;
 
 // Helper: an environment mapping variable names to Types
 using EnvType = std::unordered_map<std::string, Type>;

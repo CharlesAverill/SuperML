@@ -13,6 +13,7 @@ int main(int argc, char **argv) {
   // aptSetHomeAllowed(false);
 
   keyboardInit();
+  status_message("See romfs:/ex/{io,showcase}.ml!");
 
   bool logo_cleared = false;
 

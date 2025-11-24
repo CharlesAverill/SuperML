@@ -44,7 +44,7 @@ RSF := $(TOPDIR)/$(RESOURCES)/template.rsf
 #---------------------------------------------------------------------------------
 ARCH := -march=armv6k -mtune=mpcore -mfloat-abi=hard
 
-COMMON_FLAGS := -g -Wall -Wno-strict-aliasing -O3 -mword-relocations -fomit-frame-pointer \
+COMMON_FLAGS := -g -Wall -Wno-strict-aliasing -Wno-unused-value -Wno-unused-but-set-variable -O3 -mword-relocations -fomit-frame-pointer \
 	-ffast-math $(ARCH) $(INCLUDE) -D__3DS__ $(BUILD_FLAGS)
 CFLAGS := $(COMMON_FLAGS) -std=gnu99
 CXXFLAGS := $(COMMON_FLAGS) -std=gnu++17
@@ -143,7 +143,7 @@ OUTPUT_DIR := $(TOPDIR)/$(OUTPUT)
 all: $(BUILD) $(OUTPUT_DIR)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
-3dsx: parser_3ds $(BUILD) $(OUTPUT_DIR)
+3dsx: parser_3ds $(VERSION_H) $(BUILD) $(OUTPUT_DIR)
 	@make --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile $@
 
 cia: $(BUILD) $(OUTPUT_DIR)

@@ -6,62 +6,372 @@ bool isPrimitive(Term term) {
          primitives.count(std::get<TermNode::Var>(term->payload).name) > 0;
 }
 
-Primitive print_string = {
-  .f = [](Term arg) -> Term {
-        std::string s = std::get<std::string>(arg->payload);
-        std::cout << s;
-        return TermNode::Unit();
+#define _UNARY(name, type, ret, in, out)                                       \
+  Primitive name = {.f = [](Term arg) -> Term {                                \
+                      type val = std::get<type>(arg->payload);                 \
+                      ret;                                                     \
+                    },                                                         \
+                    .t = TypeNode::ArrowType(TypeNode::in, TypeNode::out)};
+
+#define UNARY(name, type, ret, in, out) _UNARY(name, type, ret, in(), out())
+
+#define BINARY(name, type1, type2, ret, in1, in2, out)                         \
+  Primitive name = {.f = [](Term arg) -> Term {                                \
+                      TermNode::Tuple tup =                                    \
+                          std::get<TermNode::Tuple>(arg->payload);             \
+                      type1 val1 = std::get<type1>(tup.left->payload);         \
+                      type2 val2 = std::get<type2>(tup.right->payload);        \
+                      ret;                                                     \
+                    },                                                         \
+                    .t = TypeNode::ArrowType(                                  \
+                        TypeNode::TupleType(TypeNode::in1(), TypeNode::in2()), \
+                        TypeNode::out())};
+
+// ------------------ Output functions ------------------
+
+UNARY(
+    print_string, std::string,
+    {
+      std::cout << val;
+      return TermNode::Unit();
     },
-  .t = TypeNode::ArrowType(TypeNode::String(), TypeNode::Unit())
-};
+    String, Unit)
 
-Primitive print_endline = {
-  .f = [](Term arg) -> Term {
-    std::string s = std::get<std::string>(arg->payload);
-    std::cout << s << std::endl;
-    return TermNode::Unit();
-  },
-  .t = TypeNode::ArrowType(TypeNode::String(), TypeNode::Unit())
-};
+UNARY(
+    print_endline, std::string,
+    {
+      std::cout << val << std::endl;
+      return TermNode::Unit();
+    },
+    String, Unit)
 
-Primitive print_int = {
-  .f = [](Term arg) -> Term {
-    int i = std::get<int>(arg->payload);
-    std::cout << i;
-    return TermNode::Unit();
-  },
-  .t = TypeNode::ArrowType(TypeNode::Int(), TypeNode::Unit())
-};
+UNARY(
+    print_int, int,
+    {
+      std::cout << val;
+      return TermNode::Unit();
+    },
+    Int, Unit)
 
-Primitive print_float = {
-  .f = [](Term arg) -> Term {
-    float f = std::get<float>(arg->payload);
-    std::cout << f;
-    return TermNode::Unit();
-  },
-  .t = TypeNode::ArrowType(TypeNode::Float(), TypeNode::Unit())
-};
+UNARY(
+    print_float, float,
+    {
+      std::cout << val;
+      return TermNode::Unit();
+    },
+    Float, Unit)
 
-Primitive print_bool = {
-  .f = [](Term arg) -> Term {
-    bool b = std::get<bool>(arg->payload);
-    std::cout << std::boolalpha << b << std::noboolalpha;
-    return TermNode::Unit();
-  },
-  .t = TypeNode::ArrowType(TypeNode::Bool(), TypeNode::Unit())
-};
+UNARY(
+    print_bool, bool,
+    {
+      std::cout << std::boolalpha << val << std::noboolalpha;
+      return TermNode::Unit();
+    },
+    Bool, Unit)
 
-const std::array<std::pair<std::string_view, Primitive>, 5> primitive_list {{
-    { "print_string",  print_string },
-    { "print_endline", print_endline },
-    { "print_int",     print_int },
-    { "print_bool",    print_bool },
-    { "print_float",   print_float },
-}};
+// ------------------ Input functions ------------------
+
+// Maximum characters to read in at a time is 1kb
+#define READ_MAX 1024
+
+UNARY(
+    read_line, std::monostate,
+    {
+
+#ifdef __3DS__
+      char buf[READ_MAX];
+      normalKeyboardInit();
+      setupKeyboard("read_line", "");
+      swkbdInputText(&swkbd, buf, READ_MAX);
+      std::cout << buf << std::endl;
+      return TermNode::String(buf);
+#else
+      std::string in;
+      std::getline(std::cin, in);
+      return TermNode::String(in);
+#endif
+    },
+    Unit, String)
+
+UNARY(
+    read_int, std::monostate,
+    {
+
+#ifdef __3DS__
+      char buf[READ_MAX];
+      intKeyboardInit();
+      setupKeyboard("read_int", "");
+      swkbdInputText(&swkbd, buf, READ_MAX);
+      int x = std::stoi(buf);
+      std::cout << x << std::endl;
+      normalKeyboardInit();
+      return TermNode::Int(x);
+#else
+      std::string in;
+      std::getline(std::cin, in);
+      return TermNode::Int(std::stoi(in));
+#endif
+    },
+    Unit, Int)
+
+UNARY(
+    read_float, std::monostate,
+    {
+
+#ifdef __3DS__
+      char buf[READ_MAX];
+      floatKeyboardInit();
+      setupKeyboard("read_float", "");
+      swkbdInputText(&swkbd, buf, READ_MAX);
+      float x = std::stof(buf);
+      std::cout << x << std::endl;
+      normalKeyboardInit();
+      return TermNode::Float(x);
+#else
+      std::string in;
+      std::getline(std::cin, in);
+      return TermNode::Float(std::stof(in));
+#endif
+    },
+    Unit, Float)
+
+// ------------------ Boolean functions ------------------
+
+UNARY(_not, bool, { return TermNode::Bool(!val); }, Bool, Bool)
+
+BINARY(
+    _and, bool, bool, { return TermNode::Bool(val1 && val2); }, Bool, Bool,
+    Bool)
+
+BINARY(
+    _or, bool, bool, { return TermNode::Bool(val1 || val2); }, Bool, Bool, Bool)
+
+// ------------------ Integer functions ------------------
+
+UNARY(neg, int, { return TermNode::Int(-val); }, Int, Int)
+
+UNARY(succ, int, { return TermNode::Int(val + 1); }, Int, Int)
+
+UNARY(pred, int, { return TermNode::Int(val - 1); }, Int, Int)
+
+BINARY(add, int, int, { return TermNode::Int(val1 + val2); }, Int, Int, Int)
+
+BINARY(sub, int, int, { return TermNode::Int(val1 - val2); }, Int, Int, Int)
+
+BINARY(mul, int, int, { return TermNode::Int(val1 * val2); }, Int, Int, Int)
+
+BINARY(_div, int, int, { return TermNode::Int(val1 / val2); }, Int, Int, Int)
+
+BINARY(mod, int, int, { return TermNode::Int(val1 % val2); }, Int, Int, Int)
+
+UNARY(_abs, int, { return TermNode::Int(abs(val)); }, Int, Int)
+
+BINARY(land, int, int, { return TermNode::Int(val1 & val2); }, Int, Int, Int)
+
+BINARY(lor, int, int, { return TermNode::Int(val1 | val2); }, Int, Int, Int)
+
+BINARY(lxor, int, int, { return TermNode::Int(val1 ^ val2); }, Int, Int, Int)
+
+UNARY(lnot, int, { return TermNode::Int(~val); }, Int, Int)
+
+BINARY(lsl, int, int, { return TermNode::Int(val1 << val2); }, Int, Int, Int)
+
+BINARY(
+    lsr, int, int,
+    { return TermNode::Int(static_cast<unsigned int>(val1) >> val2); }, Int,
+    Int, Int)
+
+BINARY(asr, int, int, { return TermNode::Int(val1 >> val2); }, Int, Int, Int)
+
+// ------------------ Float functions ------------------
+
+UNARY(fneg, float, { return TermNode::Float(-val); }, Float, Float)
+
+UNARY(fpos, float, { return TermNode::Float(+val); }, Float, Float)
+
+BINARY(
+    _fadd, float, float, { return TermNode::Float(val1 + val2); }, Float, Float,
+    Float)
+
+BINARY(
+    _fsub, float, float, { return TermNode::Float(val1 - val2); }, Float, Float,
+    Float)
+
+BINARY(
+    _fmul, float, float, { return TermNode::Float(val1 * val2); }, Float, Float,
+    Float)
+
+BINARY(
+    _fdiv, float, float, { return TermNode::Float(val1 / val2); }, Float, Float,
+    Float)
+
+BINARY(
+    fpow, float, float, { return TermNode::Float(std::pow(val1, val2)); },
+    Float, Float, Float)
+
+UNARY(_fsqrt, float, { return TermNode::Float(std::sqrt(val)); }, Float, Float)
+
+UNARY(_fexp, float, { return TermNode::Float(std::exp(val)); }, Float, Float)
+
+UNARY(flog, float, { return TermNode::Float(std::log(val)); }, Float, Float)
+
+UNARY(flog10, float, { return TermNode::Float(std::log10(val)); }, Float, Float)
+
+UNARY(fexpm1, float, { return TermNode::Float(std::expm1(val)); }, Float, Float)
+
+UNARY(flog1p, float, { return TermNode::Float(std::log1p(val)); }, Float, Float)
+
+UNARY(fcos, float, { return TermNode::Float(std::cos(val)); }, Float, Float)
+
+UNARY(fsin, float, { return TermNode::Float(std::sin(val)); }, Float, Float)
+
+UNARY(ftan, float, { return TermNode::Float(std::tan(val)); }, Float, Float)
+
+UNARY(facos, float, { return TermNode::Float(std::acos(val)); }, Float, Float)
+
+UNARY(fasin, float, { return TermNode::Float(std::asin(val)); }, Float, Float)
+
+UNARY(fatan, float, { return TermNode::Float(std::atan(val)); }, Float, Float)
+
+BINARY(
+    fatan2, float, float, { return TermNode::Float(std::atan2(val1, val2)); },
+    Float, Float, Float)
+
+UNARY(fcosh, float, { return TermNode::Float(std::cosh(val)); }, Float, Float)
+
+UNARY(fsinh, float, { return TermNode::Float(std::sinh(val)); }, Float, Float)
+
+UNARY(ftanh, float, { return TermNode::Float(std::tanh(val)); }, Float, Float)
+
+UNARY(facosh, float, { return TermNode::Float(std::acosh(val)); }, Float, Float)
+
+UNARY(fasinh, float, { return TermNode::Float(std::asinh(val)); }, Float, Float)
+
+UNARY(fatanh, float, { return TermNode::Float(std::atanh(val)); }, Float, Float)
+
+BINARY(
+    fhypot, float, float, { return TermNode::Float(std::hypot(val1, val2)); },
+    Float, Float, Float)
+
+BINARY(
+    fcopysign, float, float,
+    { return TermNode::Float(std::copysign(val1, val2)); }, Float, Float, Float)
+
+BINARY(
+    fmod_float, float, float,
+    { return TermNode::Float(std::fmod(val1, val2)); }, Float, Float, Float)
+
+_UNARY(
+    ffrexp, float,
+    {
+      int exp;
+      double sig = std::frexp(val, &exp);
+      return TermNode::TupleTerm(TermNode::Float(sig), TermNode::Int(exp));
+    },
+    Float(), TupleType(TypeNode::Float(), TypeNode::Int()))
+
+BINARY(
+    fldexp, float, int, { return TermNode::Float(std::ldexp(val1, val2)); },
+    Float, Int, Float)
+
+_UNARY(
+    _fmodf, float,
+    {
+      double intpart;
+      double frac = std::modf(val, &intpart);
+      return TermNode::TupleTerm(TermNode::Float(frac),
+                                 TermNode::Float(intpart));
+    },
+    Float(), TupleType(TypeNode::Float(), TypeNode::Float()))
+
+UNARY(
+    float_of_int, int, { return TermNode::Float(static_cast<float>(val)); },
+    Int, Float)
+
+UNARY(
+    int_of_float, float, { return TermNode::Int(static_cast<int>(val)); },
+    Float, Int)
+
+// ------------------ String functions ------------------
+
+BINARY(
+    concat, std::string, std::string, { return TermNode::String(val1 + val2); },
+    String, String, String)
+
+const std::vector<std::pair<std::string_view, Primitive>> primitive_list{
+    {{"print_string", print_string},
+     {"print_endline", print_endline},
+     {"print_int", print_int},
+     {"print_bool", print_bool},
+     {"print_float", print_float},
+
+     {"read_line", read_line},
+     {"read_int", read_int},
+     {"read_float", read_float},
+
+     {"not", _not},
+     {"and", _and},
+     {"or", _or},
+
+     {"neg", neg},
+     {"succ", succ},
+     {"pred", pred},
+     {"add", add},
+     {"sub", sub},
+     {"mul", mul},
+     {"div", _div},
+     {"mod", mod},
+     {"abs", _abs},
+     {"land", land},
+     {"lor", lor},
+     {"lxor", lxor},
+     {"lnot", lnot},
+     {"lsl", lsl},
+     {"lsr", lsr},
+     {"asr", asr},
+
+     {"fneg", fneg},
+     {"fpos", fpos},
+     {"fadd", _fadd},
+     {"fsub", _fsub},
+     {"fmul", _fmul},
+     {"fdiv", _fdiv},
+     {"pow", fpow},
+     {"sqrt", _fsqrt},
+     {"exp", _fexp},
+     {"log", flog},
+     {"log10", flog10},
+     {"expm1", fexpm1},
+     {"log1p", flog1p},
+     {"cos", fcos},
+     {"sin", fsin},
+     {"tan", ftan},
+     {"acos", facos},
+     {"asin", fasin},
+     {"atan", fatan},
+     {"atan2", fatan2},
+     {"cosh", fcosh},
+     {"sinh", fsinh},
+     {"tanh", ftanh},
+     {"acosh", facosh},
+     {"asinh", fasinh},
+     {"atanh", fatanh},
+     {"hypot", fhypot},
+     {"copysign", fcopysign},
+     {"mod_float", fmod_float},
+     {"frexp", ffrexp},
+     {"ldexp", fldexp},
+     {"modf", _fmodf},
+     {"float_of_int", float_of_int},
+     {"float", float_of_int},
+     {"int_of_float", int_of_float},
+     {"truncate", int_of_float},
+
+     {"concat", concat}}};
 
 const std::unordered_map<std::string, Primitive> primitives = [] {
-    std::unordered_map<std::string, Primitive> m;
-    for (auto &p : primitive_list)
-        m.emplace(std::string(p.first), p.second);
-    return m;
+  std::unordered_map<std::string, Primitive> m;
+  for (auto &p : primitive_list)
+    m.emplace(std::string(p.first), p.second);
+  return m;
 }();

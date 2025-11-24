@@ -84,6 +84,12 @@ std::optional<std::pair<Term, State>> step(const Term &program,
 #include "../Notepad3DS/source/display.h"
 #endif
 
+#ifdef __3DS__
+#define ERR(msg) status_message(msg);
+#else
+#define ERR(msg) std::cerr << e.what() << std::endl;
+#endif
+
 void interpreterMain(std::string filename) {
   DO_3DS(status_message("Parsing..."); consoleSelect(&topScreen));
   MC::MC_Driver driver;
@@ -97,7 +103,8 @@ void interpreterMain(std::string filename) {
   try {
     prog = typecheck(prog);
   } catch (TypeError &e) {
-    std::cerr << e.what() << std::endl;
+
+    ERR(e.what());
     return;
   }
 
@@ -113,8 +120,16 @@ void interpreterMain(std::string filename) {
   DO_3DS(status_message("Interpreting..."); clear_top_screen(););
   DEBUG(std::cout << "START INTERPRET\n==================" << std::endl);
 
+  bool exception = false;
   while (true) {
-    auto result = step(prog, state);
+    std::optional<std::pair<Term, State>> result;
+    try {
+      result = step(prog, state);
+    } catch (const std::exception &e) {
+      exception = true;
+      ERR(e.what());
+      break;
+    }
     if (!result)
       break;
     auto [nextTerm, nextState] = *result;
@@ -124,6 +139,8 @@ void interpreterMain(std::string filename) {
     stepCallback(state);
   }
 
-  DO_3DS(status_message("Done!"));
+  if (!exception) {
+    DO_3DS(status_message("Done!"));
+  }
   DEBUG(std::cout << "\n==================\nEND INTERPRET" << std::endl);
 }
