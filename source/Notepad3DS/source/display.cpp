@@ -1,5 +1,6 @@
 #include "display.h"
 #include "file_io.h"
+#include "../../version.h"
 #include <algorithm>
 #include <cctype>
 #include <iostream>
@@ -46,7 +47,7 @@ void print_centered_header(std::string text, char padding) {
 void print_version() {
   consoleSelect(&bottomScreen);
   printf(VERSION_LINE);
-  print_centered_header(VERSION, ' ');
+  print_centered_header(APP_TITLE + (std::string)" " + APP_VERSION, ' ');
 }
 
 void print_instructions() {

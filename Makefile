@@ -1,6 +1,7 @@
 .SUFFIXES:
 
 PWD= $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
+.DEFAULT_GOAL := all
 
 #---------------------------------------------------------------------------------
 # Environment Setup
@@ -58,6 +59,20 @@ LIBDIRS := $(PORTLIBS) $(CTRULIB) ./lib
 #---------------------------------------------------------------------------------
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
+
+#---------------------------------------------------------------------------------
+# Version File
+#---------------------------------------------------------------------------------
+
+include resources/AppInfo
+
+VERSION_H = $(SOURCES)/version.h
+
+$(VERSION_H): resources/AppInfo
+	echo "#pragma once" > $(VERSION_H)
+	echo "#define APP_TITLE \"$(APP_TITLE)\"" >> $(VERSION_H)
+	echo "#define APP_AUTHOR \"$(APP_AUTHOR)\"" >> $(VERSION_H)
+	echo "#define APP_VERSION \"$(APP_VER_MAJOR).$(APP_VER_MINOR).$(APP_VER_MICRO)\"" >> $(VERSION_H)
 
 #---------------------------------------------------------------------------------
 # Build Variable Setup
