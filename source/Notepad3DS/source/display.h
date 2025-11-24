@@ -23,7 +23,7 @@
 #define SELECTED_TEXT_COLOUR "\x1b[47;30m"
 
 extern PrintConsole topScreen, bottomScreen;
-extern int scroll;
+extern unsigned int scroll;
 extern std::string currentFilename;
 
 void clear_top_screen();

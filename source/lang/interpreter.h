@@ -3,7 +3,7 @@
 
 #include "../Notepad3DS/source/file.h"
 #include "../globals.h"
-#include "reductions/reductions.h"
+#include "passes/passes.h"
 #include "stdlib/stdlib.h"
 
 struct State {

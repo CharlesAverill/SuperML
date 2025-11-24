@@ -1,5 +1,5 @@
 #include "../syntax.h"
-#include "reductions.h"
+#include "passes.h"
 
 Term step(Term term) { return assoc(beta(term)); }
 

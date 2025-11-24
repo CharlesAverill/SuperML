@@ -1,6 +1,6 @@
 #include "../stdlib/stdlib.h"
 #include "../syntax.h"
-#include "reductions.h"
+#include "passes.h"
 
 Term lookup(Term x, const Env &env) {
   if (x->kind != TermNode::TmVar)

@@ -6,7 +6,7 @@
 #define VERSION "SuperML"
 
 PrintConsole topScreen, bottomScreen;
-int scroll = 0;
+unsigned int scroll = 0;
 bool fast_scroll = false;
 bool unsavedChanges = false;
 std::string currentFilename;

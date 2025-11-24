@@ -65,6 +65,8 @@ term:
       nonlet_term
     | LET ID COLON type EQUAL term IN term
         { $$ = TermNode::LetTerm($2, $4, $6, $8); }
+    | LET ID EQUAL term IN term
+        { $$ = TermNode::LetTerm($2, TypeNode::Unknown(), $4, $6); }
     | nonlet_term SEMICOLON term
         { $$ = TermNode::LetTerm("_", TypeNode::Unit(), $1, $3); }
     ;

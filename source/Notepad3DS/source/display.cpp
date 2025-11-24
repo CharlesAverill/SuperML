@@ -105,9 +105,9 @@ void update_screen(File &file, unsigned int current_line,
   print_status(file, current_line);
   status_message("");
 
-  int start_line = scroll;
-  int end_line = scroll + MAX_LINES;
-  if (end_line >= (int)file.lines.size())
+  unsigned int start_line = scroll;
+  unsigned int end_line = scroll + MAX_LINES;
+  if (end_line >= file.lines.size())
     end_line = file.lines.size() - 1;
 
   consoleSelect(&topScreen);
@@ -126,7 +126,7 @@ void update_screen(File &file, unsigned int current_line,
     auto iter = file.lines.begin();
     std::advance(iter, start_line);
 
-    for (int file_idx = start_line; file_idx <= end_line; file_idx++, iter++) {
+    for (unsigned int file_idx = start_line; file_idx <= end_line; file_idx++, iter++) {
       std::string line_str = char_vec_to_string(*iter);
 
       // Move cursor to line
@@ -141,12 +141,12 @@ void update_screen(File &file, unsigned int current_line,
     }
 
     // Clear any remaining screen lines below the last line of the file
-    for (int screen_idx = end_line + 1; screen_idx <= end_line; screen_idx++) {
+    for (unsigned int screen_idx = end_line + 1; screen_idx <= end_line; screen_idx++) {
       printf("\x1b[%d;0H\033[2K", screen_idx - start_line + 1);
     }
   } else {
     // Only redraw specified lines
-    for (int line_idx : lines_to_redraw) {
+    for (unsigned int line_idx : lines_to_redraw) {
       if (line_idx < start_line || line_idx > end_line ||
           !(file.lines.size() <= line_idx))
         continue; // skip lines not visible

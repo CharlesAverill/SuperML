@@ -53,7 +53,7 @@ static std::string stringOfTypeWithPrec(Type t, int prec) {
     return out.str();
   }
 
-  default:
+  case TypeNode::TUnknown:
     return "<unknown>";
   }
 }
@@ -122,10 +122,6 @@ std::string stringOfTerm(Term t, int depth) {
     out << stringOfTerm(ap.f, 0) << " " << stringOfTerm(ap.arg, 0);
     break;
   }
-
-  default:
-    out << "<unknown-term>";
-    break;
   }
   return out.str();
 }

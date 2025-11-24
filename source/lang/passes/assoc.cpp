@@ -1,4 +1,4 @@
-#include "reductions.h"
+#include "passes.h"
 
 inline const TermNode::Let &asLet(const Term &t) {
   return std::get<TermNode::Let>(t->payload);
@@ -82,8 +82,5 @@ Term assoc(Term term) {
     // Insert deeply nested lets
     return insert(let.name, let.type, e1p, e2p);
   }
-
-  default:
-    throw std::runtime_error("assoc: unknown term kind");
   }
 }

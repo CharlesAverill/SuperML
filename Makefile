@@ -1,7 +1,7 @@
 .SUFFIXES:
 
 PWD= $(dir $(abspath $(firstword $(MAKEFILE_LIST))))
-.DEFAULT_GOAL := all
+.DEFAULT_GOAL := 3dsx
 
 #---------------------------------------------------------------------------------
 # Environment Setup

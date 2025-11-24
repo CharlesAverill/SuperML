@@ -60,7 +60,7 @@ std::optional<std::pair<Term, State>> step(const Term &program,
       auto prim = primitives.find(v.name);
 
       if (prim != primitives.end()) {
-        Term newTerm = prim->second(arg); // pure
+        Term newTerm = prim->second.f(arg); // pure
         return std::make_optional(std::make_pair(newTerm, state));
       }
     }
@@ -85,9 +85,6 @@ std::optional<std::pair<Term, State>> step(const Term &program,
 #endif
 
 void interpreterMain(std::string filename) {
-  DO_3DS(status_message("Initializing interpreter..."));
-  initPrimitives();
-
   DO_3DS(status_message("Parsing..."); consoleSelect(&topScreen));
   MC::MC_Driver driver;
   if (driver.parse(filename.c_str())) {
@@ -96,6 +93,13 @@ void interpreterMain(std::string filename) {
   Term prog = driver.root_term;
 
   DEBUG(std::cout << "PARSED:\n" << stringOfTerm(prog) << std::endl);
+
+  try {
+    prog = typecheck(prog);
+  } catch (TypeError &e) {
+    std::cerr << e.what() << std::endl;
+    return;
+  }
 
   DO_3DS(status_message("Reducing..."));
   prog = reduce(prog);
