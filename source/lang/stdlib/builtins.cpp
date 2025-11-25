@@ -54,9 +54,10 @@ UNARY(
     Int, Unit)
 
 UNARY(
-    print_float, float,
+    print_float, double,
     {
-      std::cout << val;
+      std::streamsize ss = std::cout.precision();
+      std::cout << std::setprecision(15) << val << std::setprecision(ss);
       return TermNode::Unit();
     },
     Float, Unit)
@@ -123,14 +124,14 @@ UNARY(
       floatKeyboardInit();
       setupKeyboard("read_float", "");
       swkbdInputText(&swkbd, buf, READ_MAX);
-      float x = std::stof(buf);
+      double x = std::stod(buf);
       std::cout << x << std::endl;
       normalKeyboardInit();
       return TermNode::Float(x);
 #else
       std::string in;
       std::getline(std::cin, in);
-      return TermNode::Float(std::stof(in));
+      return TermNode::Float(std::stod(in));
 #endif
     },
     Unit, Float)
@@ -185,84 +186,90 @@ BINARY(asr, int, int, { return TermNode::Int(val1 >> val2); }, Int, Int, Int)
 
 // ------------------ Float functions ------------------
 
-UNARY(fneg, float, { return TermNode::Float(-val); }, Float, Float)
+UNARY(fneg, double, { return TermNode::Float(-val); }, Float, Float)
 
-UNARY(fpos, float, { return TermNode::Float(+val); }, Float, Float)
-
-BINARY(
-    _fadd, float, float, { return TermNode::Float(val1 + val2); }, Float, Float,
-    Float)
+UNARY(fpos, double, { return TermNode::Float(+val); }, Float, Float)
 
 BINARY(
-    _fsub, float, float, { return TermNode::Float(val1 - val2); }, Float, Float,
-    Float)
+    _fadd, double, double, { return TermNode::Float(val1 + val2); }, Float,
+    Float, Float)
 
 BINARY(
-    _fmul, float, float, { return TermNode::Float(val1 * val2); }, Float, Float,
-    Float)
+    _fsub, double, double, { return TermNode::Float(val1 - val2); }, Float,
+    Float, Float)
 
 BINARY(
-    _fdiv, float, float, { return TermNode::Float(val1 / val2); }, Float, Float,
-    Float)
+    _fmul, double, double, { return TermNode::Float(val1 * val2); }, Float,
+    Float, Float)
 
 BINARY(
-    fpow, float, float, { return TermNode::Float(std::pow(val1, val2)); },
+    _fdiv, double, double, { return TermNode::Float(val1 / val2); }, Float,
+    Float, Float)
+
+BINARY(
+    fpow, double, double, { return TermNode::Float(std::pow(val1, val2)); },
     Float, Float, Float)
 
-UNARY(_fsqrt, float, { return TermNode::Float(std::sqrt(val)); }, Float, Float)
+UNARY(_fsqrt, double, { return TermNode::Float(std::sqrt(val)); }, Float, Float)
 
-UNARY(_fexp, float, { return TermNode::Float(std::exp(val)); }, Float, Float)
+UNARY(_fexp, double, { return TermNode::Float(std::exp(val)); }, Float, Float)
 
-UNARY(flog, float, { return TermNode::Float(std::log(val)); }, Float, Float)
+UNARY(flog, double, { return TermNode::Float(std::log(val)); }, Float, Float)
 
-UNARY(flog10, float, { return TermNode::Float(std::log10(val)); }, Float, Float)
+UNARY(
+    flog10, double, { return TermNode::Float(std::log10(val)); }, Float, Float)
 
-UNARY(fexpm1, float, { return TermNode::Float(std::expm1(val)); }, Float, Float)
+UNARY(
+    fexpm1, double, { return TermNode::Float(std::expm1(val)); }, Float, Float)
 
-UNARY(flog1p, float, { return TermNode::Float(std::log1p(val)); }, Float, Float)
+UNARY(
+    flog1p, double, { return TermNode::Float(std::log1p(val)); }, Float, Float)
 
-UNARY(fcos, float, { return TermNode::Float(std::cos(val)); }, Float, Float)
+UNARY(fcos, double, { return TermNode::Float(std::cos(val)); }, Float, Float)
 
-UNARY(fsin, float, { return TermNode::Float(std::sin(val)); }, Float, Float)
+UNARY(fsin, double, { return TermNode::Float(std::sin(val)); }, Float, Float)
 
-UNARY(ftan, float, { return TermNode::Float(std::tan(val)); }, Float, Float)
+UNARY(ftan, double, { return TermNode::Float(std::tan(val)); }, Float, Float)
 
-UNARY(facos, float, { return TermNode::Float(std::acos(val)); }, Float, Float)
+UNARY(facos, double, { return TermNode::Float(std::acos(val)); }, Float, Float)
 
-UNARY(fasin, float, { return TermNode::Float(std::asin(val)); }, Float, Float)
+UNARY(fasin, double, { return TermNode::Float(std::asin(val)); }, Float, Float)
 
-UNARY(fatan, float, { return TermNode::Float(std::atan(val)); }, Float, Float)
+UNARY(fatan, double, { return TermNode::Float(std::atan(val)); }, Float, Float)
 
 BINARY(
-    fatan2, float, float, { return TermNode::Float(std::atan2(val1, val2)); },
+    fatan2, double, double, { return TermNode::Float(std::atan2(val1, val2)); },
     Float, Float, Float)
 
-UNARY(fcosh, float, { return TermNode::Float(std::cosh(val)); }, Float, Float)
+UNARY(fcosh, double, { return TermNode::Float(std::cosh(val)); }, Float, Float)
 
-UNARY(fsinh, float, { return TermNode::Float(std::sinh(val)); }, Float, Float)
+UNARY(fsinh, double, { return TermNode::Float(std::sinh(val)); }, Float, Float)
 
-UNARY(ftanh, float, { return TermNode::Float(std::tanh(val)); }, Float, Float)
+UNARY(ftanh, double, { return TermNode::Float(std::tanh(val)); }, Float, Float)
 
-UNARY(facosh, float, { return TermNode::Float(std::acosh(val)); }, Float, Float)
+UNARY(
+    facosh, double, { return TermNode::Float(std::acosh(val)); }, Float, Float)
 
-UNARY(fasinh, float, { return TermNode::Float(std::asinh(val)); }, Float, Float)
+UNARY(
+    fasinh, double, { return TermNode::Float(std::asinh(val)); }, Float, Float)
 
-UNARY(fatanh, float, { return TermNode::Float(std::atanh(val)); }, Float, Float)
+UNARY(
+    fatanh, double, { return TermNode::Float(std::atanh(val)); }, Float, Float)
 
 BINARY(
-    fhypot, float, float, { return TermNode::Float(std::hypot(val1, val2)); },
+    fhypot, double, double, { return TermNode::Float(std::hypot(val1, val2)); },
     Float, Float, Float)
 
 BINARY(
-    fcopysign, float, float,
+    fcopysign, double, double,
     { return TermNode::Float(std::copysign(val1, val2)); }, Float, Float, Float)
 
 BINARY(
-    fmod_float, float, float,
+    fmod_float, double, double,
     { return TermNode::Float(std::fmod(val1, val2)); }, Float, Float, Float)
 
 _UNARY(
-    ffrexp, float,
+    ffrexp, double,
     {
       int exp;
       double sig = std::frexp(val, &exp);
@@ -271,11 +278,11 @@ _UNARY(
     Float(), TupleType(TypeNode::Float(), TypeNode::Int()))
 
 BINARY(
-    fldexp, float, int, { return TermNode::Float(std::ldexp(val1, val2)); },
+    fldexp, double, int, { return TermNode::Float(std::ldexp(val1, val2)); },
     Float, Int, Float)
 
 _UNARY(
-    _fmodf, float,
+    _fmodf, double,
     {
       double intpart;
       double frac = std::modf(val, &intpart);
@@ -285,11 +292,11 @@ _UNARY(
     Float(), TupleType(TypeNode::Float(), TypeNode::Float()))
 
 UNARY(
-    float_of_int, int, { return TermNode::Float(static_cast<float>(val)); },
+    float_of_int, int, { return TermNode::Float(static_cast<double>(val)); },
     Int, Float)
 
 UNARY(
-    int_of_float, float, { return TermNode::Int(static_cast<int>(val)); },
+    int_of_float, double, { return TermNode::Int(static_cast<int>(val)); },
     Float, Int)
 
 // ------------------ String functions ------------------

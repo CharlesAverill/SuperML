@@ -112,7 +112,7 @@ struct TermNode {
     int index;
   };
 
-  using Payload = std::variant<std::monostate, bool, int, float, std::string,
+  using Payload = std::variant<std::monostate, bool, int, double, std::string,
                                Tuple, Let, Abs, App, Var>;
 
   Payload payload;
@@ -128,7 +128,7 @@ struct TermNode {
   static Term Int(int i) {
     return std::make_shared<TermNode>(TermNode{TmInt, i, TypeNode::Int()});
   }
-  static Term Float(float f) {
+  static Term Float(double f) {
     return std::make_shared<TermNode>(TermNode{TmFloat, f, TypeNode::Float()});
   }
   static Term String(std::string s) {
@@ -175,7 +175,7 @@ struct TermNode {
     case TermNode::TmInt:
       return std::get<int>(this->payload) == std::get<int>(other.payload);
     case TermNode::TmFloat:
-      return std::get<float>(this->payload) == std::get<float>(other.payload);
+      return std::get<double>(this->payload) == std::get<double>(other.payload);
     case TermNode::TmString:
       return std::get<std::string>(this->payload) ==
              std::get<std::string>(other.payload);

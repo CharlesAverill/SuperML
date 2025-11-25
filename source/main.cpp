@@ -43,6 +43,7 @@ int main(int argc, char **argv) {
 
       if (do_run) {
         // clear_top_screen();
+        saveFile(currentFilename);
         interpreterMain(currentFilename);
       }
     }

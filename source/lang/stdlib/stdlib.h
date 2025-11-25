@@ -4,6 +4,8 @@
 #include "../../globals.h"
 #include "../syntax.h"
 #include <cmath>
+#include <iomanip>
+#include <limits>
 #include <string>
 #include <unordered_map>
 #include <vector>

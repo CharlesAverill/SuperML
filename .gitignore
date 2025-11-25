@@ -93,3 +93,4 @@ source/lang/parser/lex*.*pp
 source/lang/parser/parser*.*pp
 source/lang/parser/*.output
 source/lang/parser/*.report
+source/lang/parser/*.hh

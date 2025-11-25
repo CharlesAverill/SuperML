@@ -82,7 +82,7 @@ std::string stringOfTerm(Term t, int depth) {
     break;
 
   case TermNode::TmFloat:
-    out << std::get<float>(t->payload);
+    out << std::get<double>(t->payload);
     break;
 
   case TermNode::TmString:

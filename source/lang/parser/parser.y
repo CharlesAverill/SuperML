@@ -46,7 +46,7 @@
 
 %type <std::string> ID STRINGLIT
 %type <int> INTLIT
-%type <float> FLOATLIT
+%type <double> FLOATLIT
 
 %right SEMICOLON
 %left EQUAL

@@ -16,7 +16,7 @@ using token = MC::MC_Parser::token;
 
 /* helper to build values into the parser semantic variant */
 #define BUILD_INT(v)    lval->build<int>(v)
-#define BUILD_FLOAT(v)  lval->build<float>(v)
+#define BUILD_FLOAT(v)  lval->build<double>(v)
 #define BUILD_STR(s)    lval->build< std::string >(s)
 
 %}
@@ -72,11 +72,11 @@ using token = MC::MC_Parser::token;
 "string" {return token::STRING;}
 
 [0-9]+"."[0-9]*([eE][+-]?[0-9]+)?   {
-                          BUILD_FLOAT(atof(yytext));
+                          BUILD_FLOAT(std::stod(yytext));
                           return token::FLOATLIT;
                         }
 [0-9]+([eE][+-]?[0-9]+)?             {
-                          BUILD_INT(atoi(yytext));
+                          BUILD_INT(std::stoi(yytext));
                           return token::INTLIT;
                         }
 

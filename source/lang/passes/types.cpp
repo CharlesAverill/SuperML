@@ -211,7 +211,7 @@ Term annotate_term_with_types(const Term &term, Subst &S) {
     return TermNode::Int(std::get<int>(term->payload));
 
   case TermNode::TmFloat:
-    return TermNode::Float(std::get<float>(term->payload));
+    return TermNode::Float(std::get<double>(term->payload));
 
   case TermNode::TmString:
     return TermNode::String(std::get<std::string>(term->payload));
