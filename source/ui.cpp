@@ -33,7 +33,7 @@ void intKeyboardInit(void) {
 
 static SwkbdCallbackResult validateFloat(void *user, const char **ppMessage,
                                          const char *text, size_t textlen) {
-  *ppMessage = "Please enter a valid floating-point number";
+  *ppMessage = "Please enter a valid floating-\npoint number";
 
   if (textlen == 0)
     return SWKBD_CALLBACK_CONTINUE;

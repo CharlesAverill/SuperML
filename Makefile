@@ -17,7 +17,7 @@ endif
 include $(DEVKITARM)/3ds_rules
 
 # ip address of 3ds for hblauncher/fbi target.
-IP3DS := 192.168.6.26
+IP3DS := 172.20.10.2
 
 #---------------------------------------------------------------------------------
 # Directory Setup
@@ -34,8 +34,8 @@ RESOURCES := resources
 # Resource Setup
 #---------------------------------------------------------------------------------
 APP_INFO := $(RESOURCES)/AppInfo
-BANNER_AUDIO := $(RESOURCES)/audio
-BANNER_IMAGE := $(RESOURCES)/banner
+BANNER_AUDIO := $(RESOURCES)/audio/audio
+BANNER_IMAGE := $(RESOURCES)/banner/banner
 ICON := $(RESOURCES)/icon.png
 RSF := $(TOPDIR)/$(RESOURCES)/template.rsf
 
