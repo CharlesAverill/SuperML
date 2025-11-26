@@ -32,7 +32,7 @@ CIA/3DSX downloads are available in the [releases](https://github.com/CharlesAve
 
 ## Screenshots
 
-![logo](screenshots/logo.gif)
+<!-- ![logo](screenshots/logo.gif) -->
 
 ![logo](screenshots/logo.png)
 ![code](screenshots/code.png)
