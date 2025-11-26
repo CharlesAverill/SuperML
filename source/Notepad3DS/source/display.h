@@ -25,6 +25,7 @@
 extern PrintConsole topScreen, bottomScreen;
 extern unsigned int scroll;
 extern std::string currentFilename;
+extern unsigned int cursor_pos;
 
 void clear_top_screen();
 void clear_bottom_screen();

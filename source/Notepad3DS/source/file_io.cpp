@@ -18,7 +18,7 @@ File open_file(std::string &filename) {
   std::ifstream file_open(filename);
   File file;
   // Remove newline at start
-  file.lines.pop_front();
+  file.lines.clear();
   if (file_open.is_open()) {
     std::string line;
     while (getline(file_open, line)) {

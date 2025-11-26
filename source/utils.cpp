@@ -29,7 +29,7 @@ std::string char_vec_to_string(std::vector<char> &line) {
       break;
     }
   }
-  return temp_str;
+  return std::string(line.begin(), line.end());
 }
 
 bool is_wrapped_in_parens(const std::string &s) {

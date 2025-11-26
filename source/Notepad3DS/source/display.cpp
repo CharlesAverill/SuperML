@@ -59,8 +59,8 @@ void print_instructions() {
          "(X): Save file\n"
          "(Y): Open file\n"
          "(R): Search\n"
-         "(L + DPad): Jump to top/bottom\n"
-         "(DPad): Change selected line\n"
+         "(DPad/Joystick): Scroll\n"
+         "(L + DPad): Fast Scroll\n"
          "(SELECT): Parse and Run\n");
 }
 
@@ -136,8 +136,13 @@ void update_screen(File &file, unsigned int current_line,
       // Clear line first
       printf("\033[2K");
 
+      int horizontal_offset = line_str.length() > MAX_TOP_WIDTH ? cursor_pos : 0;
+
       // Print text
-      print_text(line_str.c_str(), file_idx - start_line,
+      std::string line = std::to_string(file_idx);
+      line.insert(0, 2 - line.length(), ' ');
+      line += std::string(": ") + (line_str.c_str() + horizontal_offset);
+      print_text(line.c_str(), file_idx - start_line,
                  current_line - scroll);
     }
 
@@ -163,8 +168,13 @@ void update_screen(File &file, unsigned int current_line,
       // Clear line if empty or just '\n'
       printf("\033[2K");
 
+      int horizontal_offset = line_str.length() > MAX_TOP_WIDTH ? cursor_pos : 0;
+
       // Print text
-      print_text(line_str.c_str(), line_idx - start_line,
+      std::string line = std::to_string(line_idx + scroll);
+      line.insert(0, 2 - line.length(), ' ');
+      line += std::string(": ") + (line_str.c_str() + horizontal_offset);
+      print_text(line.c_str(), line_idx + scroll - start_line,
                  current_line - scroll);
     }
 

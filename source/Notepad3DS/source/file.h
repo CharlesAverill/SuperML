@@ -20,7 +20,7 @@ struct File {
 
   int size() { return lines.size(); }
 
-  std::list<std::vector<char>> lines;
+  std::vector<std::vector<char>> lines;
   // Used to check if file open was successful
   bool read_success = false;
 };

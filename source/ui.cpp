@@ -10,9 +10,12 @@ unsigned int scroll = 0;
 bool fast_scroll = false;
 bool unsavedChanges = false;
 std::string currentFilename;
+unsigned int cursor_pos = 0;
 
 void move_down(File &file);
 void move_up(File &file);
+void move_left(File &file);
+void move_right(File &file);
 
 unsigned int current_file_line = 0;
 
@@ -268,6 +271,11 @@ void keyboardMain(uint32_t kDown, uint32_t kHeld) {
   } else if ((kDown & KEY_DUP) | (kHeld & KEY_CPAD_UP)) {
     // Move a line up (towards top of screen)
     move_up(file);
+  } else if ((kDown & KEY_DLEFT) | (kHeld & KEY_CPAD_LEFT)) {
+    // Move cursor left
+    move_left(file);
+  } else if ((kDown & KEY_DRIGHT) | (kHeld & KEY_CPAD_RIGHT)) {
+    move_right(file);
   }
 
   if (entered_text && button != SWKBD_BUTTON_NONE) {
@@ -303,6 +311,8 @@ void move_down(File &file) {
     file.lines.push_back(std::vector<char>{'\n'});
   }
 
+  cursor_pos = 0;
+
   update_screen(file, current_file_line, {old_line, current_file_line});
 }
 
@@ -334,7 +344,28 @@ void move_up(File &file) {
     }
   }
 
+  cursor_pos = 0;
+
   update_screen(file, current_file_line, {old_line, current_file_line});
+}
+
+// We do length - 2 instead of length - 1 to skip the newlines
+void move_left(File &file) {
+  std::string line = char_vec_to_string(file.lines[current_file_line]);
+  if (fast_scroll)
+    cursor_pos = 0;
+  else
+    cursor_pos = cursor_pos > 0 ? cursor_pos - 1 : line.length() - 2;
+  update_screen(file, current_file_line);
+}
+
+void move_right(File &file) {
+  std::string line = char_vec_to_string(file.lines[current_file_line]);
+  if (fast_scroll)
+    cursor_pos = line.length() - 2;
+  else
+    cursor_pos = cursor_pos < line.length() - 2? cursor_pos + 1 : 0;
+  update_screen(file, current_file_line);
 }
 
 bool promptSaveFile(void) {
