@@ -22,16 +22,18 @@ unsigned int current_file_line = 0;
 File file;
 SwkbdState swkbd;
 
+#define FEATURES 0
+
 void normalKeyboardInit(void) {
   swkbdInit(&swkbd, SWKBD_TYPE_NORMAL, 1, -1);
   swkbdSetValidation(&swkbd, SWKBD_ANYTHING, 0, 2);
-  swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
+  swkbdSetFeatures(&swkbd, FEATURES);
 }
 
 void intKeyboardInit(void) {
   swkbdInit(&swkbd, SWKBD_TYPE_NUMPAD, 1, -1);
   swkbdSetValidation(&swkbd, SWKBD_NOTEMPTY_NOTBLANK, 0, 2);
-  swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
+  swkbdSetFeatures(&swkbd, FEATURES);
 }
 
 static SwkbdCallbackResult validateFloat(void *user, const char **ppMessage,
@@ -80,7 +82,7 @@ static SwkbdCallbackResult validateFloat(void *user, const char **ppMessage,
 void floatKeyboardInit(void) {
   swkbdInit(&swkbd, SWKBD_TYPE_QWERTY, 1, -1);
   swkbdSetValidation(&swkbd, SWKBD_NOTEMPTY_NOTBLANK, 0, 2);
-  swkbdSetFeatures(&swkbd, SWKBD_DARKEN_TOP_SCREEN);
+  swkbdSetFeatures(&swkbd, FEATURES);
   swkbdSetFilterCallback(&swkbd, validateFloat, NULL);
 }
 
