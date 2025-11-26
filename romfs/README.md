@@ -1,1 +1,6 @@
-These are the files that are bundled with the 3ds app and available in `romfs:/`.
+# ROMFS
+
+See romfs:/ex/ for examples!
+
+- io.ml: Basic functions for input and output using the 3DS software keyboard
+- func.ml: Showcases function support

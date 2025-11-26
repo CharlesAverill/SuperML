@@ -16,6 +16,12 @@ bool isValue(Term term);
 Term substitute(Term t, const std::string &x, Term v);
 
 /*
+    primitive argument rewriting
+    `<primitive> a b c d ...` -> `primitive (a, (b, (c, (d, ...))))`
+*/
+Term primitiveArgs(Term t);
+
+/*
     beta-reduction
     --------------
     `let x = y in x + z` -> `y + z`
@@ -36,6 +42,16 @@ Term reduce(Term term);
 // Errors
 struct TypeError : public std::runtime_error {
   TypeError(const std::string &msg) : std::runtime_error(msg) {}
+};
+
+struct UnifyError : public std::runtime_error {
+  Type t1, t2;
+  UnifyError(Type &_t1, Type &_t2)
+      : std::runtime_error("unify: " + stringOfType(_t1) + " <> " +
+                           stringOfType(_t2)) {
+    t1 = _t1;
+    t2 = _t2;
+  }
 };
 
 // Substitution mapping: maps unknown-TypeNode pointer -> Type

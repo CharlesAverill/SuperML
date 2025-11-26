@@ -84,7 +84,7 @@ UNARY(
       normalKeyboardInit();
       setupKeyboard("read_line", "");
       swkbdInputText(&swkbd, buf, READ_MAX);
-      std::cout << buf << std::endl;
+      //   std::cout << buf << std::endl;
       return TermNode::String(buf);
 #else
       std::string in;
@@ -104,7 +104,7 @@ UNARY(
       setupKeyboard("read_int", "");
       swkbdInputText(&swkbd, buf, READ_MAX);
       int x = std::stoi(buf);
-      std::cout << x << std::endl;
+      //   std::cout << x << std::endl;
       normalKeyboardInit();
       return TermNode::Int(x);
 #else
@@ -125,7 +125,7 @@ UNARY(
       setupKeyboard("read_float", "");
       swkbdInputText(&swkbd, buf, READ_MAX);
       double x = std::stod(buf);
-      std::cout << x << std::endl;
+      //   std::cout << x << std::endl;
       normalKeyboardInit();
       return TermNode::Float(x);
 #else

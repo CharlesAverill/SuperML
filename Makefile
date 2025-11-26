@@ -367,7 +367,7 @@ DEVEL_SOURCES := \
 DEVEL_OBJECTS := $(DEVEL_SOURCES:.cpp=.o)
 
 HOST_CXX := g++
-HOST_CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -D__DEBUG__
+HOST_CXXFLAGS := -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers -D__DEBUG__ -g -fno-omit-frame-pointer -rdynamic
 
 DEVEL_BIN := $(BUILD)/devel
 

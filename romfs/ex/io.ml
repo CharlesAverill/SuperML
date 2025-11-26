@@ -1,3 +1,5 @@
+(* Input/Output *)
+
 print_string "Please enter your name: ";
 let name = read_line () in
 print_string "Hello, ";

@@ -33,7 +33,7 @@
 %define parse.assert
 
 /* ---------- Token Definitions ---------- */
-%token LET IN FUN COLON SEMICOLON ARROW STAR COMMA EQUAL
+%token LET IN REC FUN COLON SEMICOLON ARROW STAR COMMA EQUAL
 %token LPAREN RPAREN
 %token TRUE FALSE
 %token INTLIT FLOATLIT STRINGLIT
@@ -43,6 +43,8 @@
 /* ---------- Modern C++ Types ---------- */
 %type <Term> term nonlet_term app_term atom
 %type <Type> type arrow_type tuple_type base_type
+%type <Arg> arg
+%type <std::vector<Arg>> args
 
 %type <std::string> ID STRINGLIT
 %type <int> INTLIT
@@ -65,11 +67,27 @@ term:
       nonlet_term
     | LET ID COLON type EQUAL term IN term
         { $$ = TermNode::LetTerm($2, $4, $6, $8); }
+    | LET ID args EQUAL term IN term
+        { $$ = TermNode::Func($2, $3, $5, $7); }
     | LET ID EQUAL term IN term
         { $$ = TermNode::LetTerm($2, TypeNode::Unknown(), $4, $6); }
     | nonlet_term SEMICOLON term
         { $$ = TermNode::LetTerm("_", TypeNode::Unit(), $1, $3); }
     ;
+
+args:
+      arg
+        { $$ = std::vector<Arg>{$1}; }
+    | arg args
+        { std::vector<Arg> v = $2; v.insert(v.begin(), $1); $$ = v; }
+
+arg:
+      ID
+        { $$ = std::make_pair($1, TypeNode::Unknown()); }
+    | LPAREN ID RPAREN
+        { $$ = std::make_pair($2, TypeNode::Unknown()); }
+    | LPAREN ID COLON type RPAREN
+        { $$ = std::make_pair($2, $4); }
 
 nonlet_term:
       FUN ID COLON type EQUAL term

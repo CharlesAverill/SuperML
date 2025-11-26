@@ -1,5 +1,4 @@
 #include "syntax.h"
-#include <sstream>
 
 // precedence: 0 = top, 1 = arrow, 2 = tuple (higher number => tighter binding)
 static std::string stringOfTypeWithPrec(Type t, int prec) {
@@ -22,6 +21,16 @@ static std::string stringOfTypeWithPrec(Type t, int prec) {
   case TypeNode::TString:
     out << "string";
     return out.str();
+  case TypeNode::TVar: {
+    out << "<";
+    auto var = std::get<TypeNode::TypeVar>(t->payload);
+    if (var.stored.has_value())
+      out << stringOfTypeWithPrec(var.stored.value(), prec);
+    else
+      out << "none";
+    out << ">";
+    return out.str();
+  }
 
   case TypeNode::TTuple: {
     // tuple has tighter precedence than arrow
@@ -30,7 +39,7 @@ static std::string stringOfTypeWithPrec(Type t, int prec) {
     std::string right = stringOfTypeWithPrec(tt.right, 2);
     std::string s = left + " * " + right;
     if (prec > 2) { // if surrounding context binds tighter, parenthesize
-      out << "(" << s << ")";
+      out << wrap(s);
     } else {
       out << s;
     }
@@ -46,7 +55,7 @@ static std::string stringOfTypeWithPrec(Type t, int prec) {
     std::string right = stringOfTypeWithPrec(at.result, 1); // allow right assoc
     std::string s = left + " -> " + right;
     if (prec > 1) { // if we need to group due to outer operator, parenthesize
-      out << "(" << s << ")";
+      out << wrap(s);
     } else {
       out << s;
     }
@@ -54,13 +63,11 @@ static std::string stringOfTypeWithPrec(Type t, int prec) {
   }
 
   case TypeNode::TUnknown:
-    return "<unknown>";
+    return std::get<std::string>(t->payload);
   }
 }
 
-std::string stringOfType(Type t, int depth) {
-  return stringOfTypeWithPrec(t, 0);
-}
+std::string stringOfType(Type t) { return stringOfTypeWithPrec(t, 0); }
 
 // Term pretty-printer
 std::string stringOfTerm(Term t, int depth) {
@@ -97,29 +104,29 @@ std::string stringOfTerm(Term t, int depth) {
 
   case TermNode::TmTuple: {
     auto const &tp = std::get<TermNode::Tuple>(t->payload);
-    out << "(" << stringOfTerm(tp.left) << ", " << stringOfTerm(tp.right)
-        << ")";
+    out << wrap(stringOfTerm(tp.left) + ", " + stringOfTerm(tp.right));
     break;
   }
 
   case TermNode::TmLet: {
     auto const &lt = std::get<TermNode::Let>(t->payload);
-    out << "let " << lt.name << " : " << stringOfType(lt.type) << " =\n"
-        << std::string(depth + 1, ' ') << stringOfTerm(lt.e1, 0) << " in\n"
-        << "(" << stringOfTerm(lt.e2, depth) << ")";
+    out << "let " + wrap(lt.name + " : " + stringOfType(lt.type)) << " =\n"
+        << std::string(depth + 1, ' ') << wrap(stringOfTerm(lt.e1, 0))
+        << " in\n"
+        << wrap(stringOfTerm(lt.e2, depth));
     break;
   }
 
   case TermNode::TmAbs: {
     auto const &fn = std::get<TermNode::Abs>(t->payload);
-    out << "(fun " << fn.param << " : " << stringOfType(fn.paramType) << " -> "
-        << stringOfTerm(fn.body, depth + 1) << ")";
+    out << wrap("fun " + wrap(fn.param + " : " + stringOfType(fn.paramType)) +
+                " -> " + stringOfTerm(fn.body, 0));
     break;
   }
 
   case TermNode::TmApp: {
     auto const &ap = std::get<TermNode::App>(t->payload);
-    out << stringOfTerm(ap.f, 0) << " " << stringOfTerm(ap.arg, 0);
+    out << wrap(stringOfTerm(ap.f, 0) + " " + stringOfTerm(ap.arg, 0));
     break;
   }
   }

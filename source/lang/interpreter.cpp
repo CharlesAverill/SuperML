@@ -96,7 +96,7 @@ void interpreterMain(std::string filename) {
   if (driver.parse(filename.c_str())) {
     return;
   }
-  Term prog = driver.root_term;
+  Term prog = primitiveArgs(driver.root_term);
 
   DEBUG(std::cout << "PARSED:\n" << stringOfTerm(prog) << std::endl);
 
@@ -135,6 +135,8 @@ void interpreterMain(std::string filename) {
     auto [nextTerm, nextState] = *result;
     prog = nextTerm;
     state = nextState;
+
+    // DEBUG(std::cout << "**********" << std::endl << stringOfTerm(prog) << std::endl);
 
     stepCallback(state);
   }

@@ -1,5 +1,4 @@
 #include "utils.h"
-#include <stdint.h>
 
 #ifndef __3DS__
 #define MAX_TOP_WIDTH __UINT64_MAX__
@@ -31,4 +30,41 @@ std::string char_vec_to_string(std::vector<char> &line) {
     }
   }
   return temp_str;
+}
+
+bool is_wrapped_in_parens(const std::string &s) {
+  if (s.size() < 2)
+    return false;
+
+  if (s.front() != '(' || s.back() != ')')
+    return false;
+
+  // Check paren *balance* to ensure the outer parens match
+  int depth = 0;
+  for (size_t i = 0; i < s.size(); ++i) {
+    if (s[i] == '(')
+      depth++;
+    else if (s[i] == ')')
+      depth--;
+
+    // If outer paren closes before the end → not fully wrapped
+    if (depth == 0 && i != s.size() - 1)
+      return false;
+  }
+  return depth == 0;
+}
+
+bool contains_whitespace(const std::string &s) {
+  for (char c : s) {
+    if (std::isspace(static_cast<unsigned char>(c)))
+      return true;
+  }
+  return false;
+}
+
+std::string wrap(const std::string &s) {
+  if (contains_whitespace(s) && !is_wrapped_in_parens(s)) {
+    return "(" + s + ")";
+  }
+  return s;
 }

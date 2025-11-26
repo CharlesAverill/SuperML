@@ -1,14 +1,21 @@
 #pragma once
+#include "../utils.h"
 #include <iostream>
 #include <memory>
+#include <optional>
+#include <sstream>
 #include <string>
 #include <variant>
+#include <vector>
 
 struct TypeNode;
 struct TermNode;
 
-using Type = std::shared_ptr<const TypeNode>;
+using Type = std::shared_ptr<TypeNode>;
 using Term = std::shared_ptr<const TermNode>;
+using Arg = std::pair<std::string, Type>;
+
+static unsigned long int unk = 0;
 
 struct TypeNode {
   enum Kind {
@@ -19,7 +26,8 @@ struct TypeNode {
     TFloat,
     TString,
     TTuple,
-    TArrow
+    TArrow,
+    TVar
   } kind;
 
   struct Tuple {
@@ -29,12 +37,18 @@ struct TypeNode {
     Type param, result;
   };
 
-  using Payload = std::variant<std::monostate, Tuple, Arrow>;
+  struct TypeVar {
+    std::optional<Type> stored;
+  };
+
+  using Payload =
+      std::variant<std::monostate, std::string, Tuple, Arrow, TypeVar>;
   Payload payload;
 
   // ---- Factory constructors ----
   static Type Unknown() {
-    return std::make_shared<TypeNode>(TypeNode{TUnknown, {}});
+    return std::make_shared<TypeNode>(
+        TypeNode{TUnknown, "?t" + std::to_string(unk++)});
   }
   static Type Unit() { return std::make_shared<TypeNode>(TypeNode{TUnit, {}}); }
   static Type Bool() { return std::make_shared<TypeNode>(TypeNode{TBool, {}}); }
@@ -54,11 +68,26 @@ struct TypeNode {
     return std::make_shared<TypeNode>(TypeNode{TArrow, Arrow{p, r}});
   }
 
+  static Type gentyp(void) {
+    return std::make_shared<TypeNode>(TypeNode{TVar, TypeVar{std::nullopt}});
+  }
+
+  static Type gentyp(Type t) {
+    return std::make_shared<TypeNode>(
+        TypeNode{TVar, TypeVar{std::make_optional<Type>(t)}});
+  }
+
   bool operator==(const TypeNode &other) const {
     if (this->kind != other.kind)
       return false;
 
     switch (this->kind) {
+      // case TypeNode::TUnknown: {
+      //   auto &A = std::get<std::string>(this->payload);
+      //   auto &B = std::get<std::string>(other.payload);
+      //   return A == B;
+      // }
+
     case TypeNode::TTuple: {
       auto &A = std::get<TypeNode::Tuple>(this->payload);
       auto &B = std::get<TypeNode::Tuple>(other.payload);
@@ -151,6 +180,19 @@ struct TermNode {
         TermNode{TmLet, Let{name, type, e1, e2}, e2->type});
   }
 
+  static Term Func(std::string name, std::vector<Arg> args, Term body,
+                   Term in) {
+    Type t = body->type ? body->type : TypeNode::Unknown();
+    Term abs = body;
+    for (int i = args.size() - 1; i >= 0; i--) {
+      t = TypeNode::ArrowType(args.at(i).second, t);
+      abs = AbsTerm(args.at(i).first, args.at(i).second, abs);
+    }
+
+    return std::make_shared<TermNode>(
+        TermNode{TmLet, Let{name, t, abs, in}, in->type});
+  }
+
   static Term AbsTerm(std::string param, Type pty, Term body) {
     Type t = TypeNode::ArrowType(pty, body->type);
     return std::make_shared<TermNode>(
@@ -219,5 +261,5 @@ struct TermNode {
   bool operator!=(const TermNode &other) const { return !(*this == other); }
 };
 
-std::string stringOfType(Type t, int depth = 0);
+std::string stringOfType(Type t);
 std::string stringOfTerm(Term t, int depth = 0);

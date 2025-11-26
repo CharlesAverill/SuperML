@@ -4,7 +4,9 @@
 #include <iostream>
 #include <string>
 
-void stepCallback(State state) {}
+void stepCallback(State state) {
+  
+}
 
 int main(int argc, char **argv) {
   if (argc < 2) {
