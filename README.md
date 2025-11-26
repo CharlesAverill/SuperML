@@ -30,6 +30,12 @@ See [examples](romfs/ex) for some example programs to run.
 
 CIA/3DSX downloads are available in the [releases](https://github.com/CharlesAverill/SuperML/releases).
 
+## Screenshots
+
+![logo](screenshots/logo.png)
+![code](screenshots/code.png)
+![output](screenshots/output.png)
+
 ## Building
 
 ### Setup
