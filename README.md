@@ -10,17 +10,27 @@ Great thanks to
 
 ## Progress
 
-So far, we have:
+### Application Features
 
-- Rudimentary builtin functions for output
-- Rudimentary text editing
-- A WIP parser using Flex/Bison
-- Execution
+### Language Features
+
+- Parser bulit with Flex+Bison
+- Hindley-Milner Type Inference (slightly janky)
+- Rudimentary builtin functions for input and output
+
+### Application Features
+
+- Text editing
 - Development interpreter target for host system
+- Load/Save on SD Card
 
-See [examples](examples) for some scripts to run
+See [examples](romfs/ex) for some example programs to run.
 
-## Compiling
+## Installation
+
+CIA/3DSX downloads are available in the [releases](https://github.com/CharlesAverill/SuperML/releases).
+
+## Building
 
 ### Setup
 
