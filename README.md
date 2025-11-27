@@ -10,8 +10,6 @@ Great thanks to
 
 ## Progress
 
-### Application Features
-
 ### Language Features
 
 - Parser bulit with Flex+Bison
