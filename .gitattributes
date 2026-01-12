@@ -42,3 +42,11 @@
 
 # Windows Scripts
 *.bat eol=crlf
+
+# Resources
+*.wav binary
+*.mscz binary
+*.aup3 binary
+*.blend* binary
+*.cgfx binary
+*.psd binary
